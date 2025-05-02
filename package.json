@@ -23,7 +23,7 @@
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
     "lint:fix": "eslint src --ext .ts --fix",
-    "test": "echo TODO",
+    "test": "node lib/test.js",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write .",
     "build:docs": "typedoc src --plugin typedoc-github-theme"

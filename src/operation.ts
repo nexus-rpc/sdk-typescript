@@ -1,5 +1,9 @@
+import "reflect-metadata";
 import { OperationInfo, Link } from "./api";
 
+/**
+ * Options for the {@link OperationHandler["start"]} method.
+ */
 export interface StartOperationOptions {
   /** Signaled when the current request is canceled.  */
   abortSignal: AbortSignal;
@@ -27,12 +31,18 @@ export interface StartOperationOptions {
   links: Link[];
 }
 
+/**
+ * Options for the {@link OperationHandler["getInfo"]} method.
+ */
 export interface GetOperationInfoOptions {
   /** Signaled when the current request is canceled.  */
   abortSignal: AbortSignal;
   headers: Record<string, string>;
 }
 
+/**
+ * Options for the {@link OperationHandler["getResult"]} method.
+ */
 export interface GetOperationResultOptions {
   /** Signaled when the current request is canceled.  */
   abortSignal: AbortSignal;
@@ -40,6 +50,9 @@ export interface GetOperationResultOptions {
   wait: number;
 }
 
+/**
+ * Options for the {@link OperationHandler["cancel"]} method.
+ */
 export interface CancelOperationOptions {
   /** Signaled when the current request is canceled.  */
   abortSignal: AbortSignal;
@@ -59,10 +72,23 @@ export interface HandlerStartOperationResultAsync {
 }
 
 // The return type from the {@link OperaitonHandler.start}. May be either a synchronous or asynchornous.
-export type HandlerStartOperationResult<T> =
-  | HandlerStartOperationResultSync<T>
-  | HandlerStartOperationResultAsync;
+export type HandlerStartOperationResult<T> = HandlerStartOperationResultSync<T> | HandlerStartOperationResultAsync;
 
+declare const inputBrand: unique symbol;
+declare const outputBrand: unique symbol;
+
+/**
+ * An operation contract that describes the name, and input and output types of an operation.
+ */
+export interface Operation<I, O> {
+  name: string;
+  [inputBrand]: I;
+  [outputBrand]: O;
+}
+
+/**
+ * A handler for an operation.
+ */
 export interface OperationHandler<I, O> {
   /**
    * Handles requests for starting an operation.
@@ -71,10 +97,7 @@ export interface OperationHandler<I, O> {
    * {@link HandlerStartOperationResultAsync} to indicate that an asynchronous operation was started. Throw a
    * {@link OperationError} to indicate that an operation completed as failed or canceled.
    */
-  start(
-    input: I,
-    options: StartOperationOptions,
-  ): Promise<HandlerStartOperationResult<O>>;
+  start(input: I, options: StartOperationOptions): Promise<HandlerStartOperationResult<O>>;
 
   /**
    * Handles requests to get the result of an asynchronous operation. Return non error result to respond successfully -
@@ -99,10 +122,7 @@ export interface OperationHandler<I, O> {
    *
    * @experimental
    */
-  getInfo(
-    token: string,
-    options: GetOperationInfoOptions,
-  ): Promise<OperationInfo>;
+  getInfo(token: string, options: GetOperationInfoOptions): Promise<OperationInfo>;
 
   /**
    * Handles requests to cancel an asynchronous operation.
@@ -115,15 +135,129 @@ export interface OperationHandler<I, O> {
   cancel(token: string, options: CancelOperationOptions): Promise<void>;
 }
 
-export type SyncOperationHandler<I, O> = (
-  input: I,
-  options: StartOperationOptions,
-) => Promise<O>;
+/**
+ * A shortcut for defining an operation handler that only implements the {@link OperationHandler.start} method and
+ * always returns a {@link HandlerStartOperationResultSync}.
+ */
+export type SyncOperationHandler<I, O> = (input: I, options: StartOperationOptions) => Promise<O>;
 
 /**
  * A named collection of operation handlers.
  */
-export type Service = Record<
-  string,
-  OperationHandler<any, any> | SyncOperationHandler<any, any>
->;
+export type OperationMap = Record<string, Operation<any, any>>;
+
+/**
+ * A named collection of partial operation handlers. Input for the {@link service} function.
+ */
+export type PartialOperationMap = Record<string, PartialOperation<any, any>>;
+
+/**
+ * A type that transforms a {@link PartialOperationMap} into an {@link OperationMap}.
+ */
+export type OperationMapFromPartial<T extends PartialOperationMap> = {
+  [K in keyof T & string]: T[K] extends PartialOperation<infer I, infer O> ? Operation<I, O> : never;
+};
+
+/**
+ * A type that defines a handler for a given operation.
+ */
+export type OperationHandlerFor<T> =
+  T extends Operation<infer I, infer O> ? OperationHandler<I, O> | SyncOperationHandler<I, O> : never;
+
+/**
+ * A type that defines a set of handlers for a given set of operation interfaces.
+ */
+export type ServiceHandlerFor<T extends OperationMap = OperationMap> = {
+  [K in keyof T & string]: OperationHandlerFor<T[K]>;
+};
+
+/**
+ * A service contract that includes a name and defines a set of operations.
+ *
+ * Can only be constructed by the {@link service} function.
+ */
+export interface Service<Operations = Record<string, Operation<any, any>>> {
+  name: string;
+  operations: Operations;
+}
+
+/**
+ * Constructs a service for a set of operations.
+ */
+export function service<O extends PartialOperationMap>(
+  name: string,
+  operations: O,
+): Service<OperationMapFromPartial<O>> {
+  const fullOps: OperationMapFromPartial<O> = Object.fromEntries(
+    Object.entries(operations).map(([key, op]) => [
+      key,
+      {
+        ...op,
+        name: op.name || key,
+      },
+    ]),
+  ) as any; // TS is having a hard time inferring the correct type here.
+  return { name, operations: fullOps };
+}
+
+/**
+ * Opetions for the {@link operation} function.
+ */
+export interface OperationOptions<_I, _O> {
+  name?: string;
+}
+
+/**
+ * A partial {@link Operation} that is used to define an operation in a {@link Service}.
+ *
+ * The difference between this and {@link Operation} is that the name is optional.
+ */
+export interface PartialOperation<I, O> {
+  name?: string;
+  [inputBrand]: I;
+  [outputBrand]: O;
+}
+
+/**
+ * Constructs an operation definition as part of a service contract.
+ */
+export function operation<I, O>(op?: OperationOptions<I, O>): PartialOperation<I, O> {
+  return op ?? ({} as any);
+}
+
+/**
+ * A key that identifies an operation in a service.
+ */
+export type OperationKey<T> = {
+  [K in keyof T & string]: T[K] extends Operation<any, any> ? K : never;
+}[keyof T & string];
+
+/**
+ * A type that extracts the input type from an operation in a service.
+ */
+export type OperationInput<T, K extends keyof T> = T[K] extends Operation<infer I, any> ? I : any;
+
+/**
+ * A type that extracts the output type from an operation in a service.
+ */
+export type OperationOutput<T, K extends keyof T> = T[K] extends Operation<any, infer O> ? O : any;
+
+/**
+ * A {@link Service} that includes a set of handlers for its operations.
+ */
+export interface ServiceHandler<T extends OperationMap = OperationMap> extends Service<T> {
+  handlers: ServiceHandlerFor<T>;
+}
+
+/**
+ * Constructs a service handler for a given service contract.
+ */
+export function serviceHandler<T extends OperationMap>(
+  service: Service<T>,
+  handlers: ServiceHandlerFor<T>,
+): ServiceHandler<T> {
+  return {
+    ...service,
+    handlers,
+  };
+}
