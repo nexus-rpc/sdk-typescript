@@ -1,6 +1,9 @@
 /** A representation of the variable states of an operation. */
 export type OperationState = "succeeded" | "failed" | "canceled" | "running";
 
+/**
+ * Information about an operation, the return type of {@link OperationHandler["getInfo"]}.
+ */
 export interface OperationInfo {
   // Token for the operation.
   token: string;
@@ -8,10 +11,10 @@ export interface OperationInfo {
   state: OperationState;
 }
 
-export type Class<E extends Error> = {
+interface Class<E extends Error> {
   new (...args: any[]): E;
   prototype: E;
-};
+}
 
 /**
  * A decorator to be used on error classes. It adds the 'name' property AND provides a custom
@@ -37,17 +40,16 @@ export type Class<E extends Error> = {
  * cross-copies-of-the-same-lib safe. It works by adding a special symbol property to the prototype of 'clazz', and then
  * checking for the presence of that symbol.
  */
-export function SymbolBasedInstanceOfError<E extends Error>(markerName: string): (clazz: Class<E>) => void {
+function SymbolBasedInstanceOfError<E extends Error>(markerName: string): (clazz: Class<E>) => void {
   return (clazz: Class<E>): void => {
     const marker = Symbol.for(`__nexus_is${markerName}`);
 
-    Object.defineProperty(clazz.prototype, 'name', { value: markerName, enumerable: true });
+    Object.defineProperty(clazz.prototype, "name", { value: markerName, enumerable: true });
     Object.defineProperty(clazz.prototype, marker, { value: true, enumerable: false });
     Object.defineProperty(clazz, Symbol.hasInstance, {
-      // eslint-disable-next-line object-shorthand
       value: function (this: any, error: object): boolean {
         if (this === clazz) {
-          return typeof error === 'object' && error !== null && (error as any)[marker] === true;
+          return typeof error === "object" && error !== null && (error as any)[marker] === true;
         } else {
           // 'this' must be a _subclass_ of clazz that doesn't redefined [Symbol.hasInstance], so that it inherited
           // from clazz's [Symbol.hasInstance]. If we don't handle this particular situation, then
@@ -134,15 +136,13 @@ export interface HandlerErrorCauseOptions extends ErrorOptions {
 /**
  * Options for constructing a {@link HandlerError} from either a message or an underlying cause.
  */
-export type HandlerErrorOptions =
-  | HandlerErrorMessageOptions
-  | HandlerErrorCauseOptions;
+export type HandlerErrorOptions = HandlerErrorMessageOptions | HandlerErrorCauseOptions;
 
 /**
  * A special error that can be returned from {@link OperationHandler} methods for failing a request with a custom status
  * code and failure message.
  */
-@SymbolBasedInstanceOfError('HandlerError')
+@SymbolBasedInstanceOfError("HandlerError")
 export class HandlerError extends Error {
   /** One of the predefined error types. */
   public readonly type: HandlerErrorType;
@@ -153,7 +153,6 @@ export class HandlerError extends Error {
   public readonly retryable?: boolean;
 
   constructor(options: HandlerErrorOptions) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super((options as any).message, options as any as ErrorOptions);
     this.type = options.type;
     this.retryable = options?.retryable;
@@ -178,20 +177,17 @@ export interface OperationErrorCauseOptions extends ErrorOptions {
 /**
  * Options for constructing an {@link OperationError} from either a message or an underlying cause.
  */
-export type OperationErrorOptions =
-  | OperationErrorMessageOptions
-  | OperationErrorCauseOptions;
+export type OperationErrorOptions = OperationErrorMessageOptions | OperationErrorCauseOptions;
 
 /**
  * An error that represents "failed" and "canceled" operation results.
  */
-@SymbolBasedInstanceOfError('OperationError')
+@SymbolBasedInstanceOfError("OperationError")
 export class OperationError extends Error {
   /** State of the operation. */
   public readonly state: "canceled" | "failed";
 
   constructor(options: OperationErrorOptions) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super((options as any).message, options as any as ErrorOptions);
     this.state = options.state;
   }

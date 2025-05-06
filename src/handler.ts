@@ -1,5 +1,5 @@
-import { type AsyncLocalStorage } from 'node:async_hooks';
-import { Link } from './api';
+import { type AsyncLocalStorage } from "node:async_hooks";
+import { Link } from "./api";
 
 /**
  * Contains general information for an operation invocation, across different handler methods.
@@ -25,26 +25,18 @@ export interface HandlerContext {
 
 // Set to undefined to support importing the SDK without access to node:async_hooks for browsers and sandboxed
 // environments.
-let asyncLocalStorage: AsyncLocalStorage<HandlerContext> | undefined = undefined;
-
-// Make it safe to use nexus-rpc with multiple versions installed.
-// Caching the promise prevents duplicate loading.
-const asyncLocalStoragePromiseSymbol = Symbol.for('__nexus_context_storage_promise__');
+export let asyncLocalStorage: AsyncLocalStorage<HandlerContext> | undefined = undefined;
 
 /**
  * Install an AsyncLocalStorage instance for use in handler contexts.
  *
- * Must be called by framework implementations at least once per process.
- * Idempotent and can be called multiple times.
+ * Not meant to be called by framework implementations. Frameworks should use `installAsyncLocalStorage` from
+ * `nexus-rpc/lib/context-storage`.
+ *
+ * @internal
  */
-export async function installAsyncLocalStorage() {
-  if ((globalThis as any)[asyncLocalStoragePromiseSymbol]) {
-    return;
-  }
-  (globalThis as any)[asyncLocalStoragePromiseSymbol] = (async () => {
-    const { AsyncLocalStorage } = await import('node:async_hooks');
-    asyncLocalStorage = new AsyncLocalStorage();
-  })();
+export async function installAsyncLocalStorage(als: AsyncLocalStorage<HandlerContext>) {
+  asyncLocalStorage = als;
 }
 
 /**
@@ -54,11 +46,11 @@ export async function installAsyncLocalStorage() {
  */
 export function getHandlerContext<T extends HandlerContext = HandlerContext>(): T {
   if (asyncLocalStorage == null) {
-    throw new ReferenceError('AsyncLocalStorage uninitialized');
+    throw new ReferenceError("AsyncLocalStorage uninitialized");
   }
   const context = asyncLocalStorage.getStore();
   if (context == null) {
-    throw new ReferenceError('HandlerContext uninitialized');
+    throw new ReferenceError("HandlerContext uninitialized");
   }
   return context as T;
 }
@@ -70,7 +62,7 @@ export function getHandlerContext<T extends HandlerContext = HandlerContext>(): 
  */
 export async function withContext<T extends HandlerContext, R>(context: T, fn: () => Promise<R>): Promise<R> {
   if (asyncLocalStorage == null) {
-    throw new ReferenceError('AsyncLocalStorage uninitialized');
+    throw new ReferenceError("AsyncLocalStorage uninitialized");
   }
   return await asyncLocalStorage.run(context, fn);
 }
@@ -80,7 +72,7 @@ export async function withContext<T extends HandlerContext, R>(context: T, fn: (
  * It returns true when called from any OperationHandler method or middleware.
  */
 export function inHandlerContext(): boolean {
-  return asyncLocalStorage?.getStore() != null
+  return asyncLocalStorage?.getStore() != null;
 }
 
 /**

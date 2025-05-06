@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import { OperationInfo, Link } from "./api";
 
 /**
@@ -165,24 +164,24 @@ export type OperationHandlerFor<T> =
   T extends Operation<infer I, infer O> ? OperationHandler<I, O> | SyncOperationHandler<I, O> : never;
 
 /**
- * A type that defines a set of handlers for a given set of operation interfaces.
+ * A type that defines a collection of handlers for a given collection of operation interfaces.
  */
 export type ServiceHandlerFor<T extends OperationMap = OperationMap> = {
   [K in keyof T & string]: OperationHandlerFor<T[K]>;
 };
 
 /**
- * A service contract that includes a name and defines a set of operations.
+ * A service contract that includes a name and defines a collection of operations.
  *
  * Can only be constructed by the {@link service} function.
  */
-export interface Service<Operations = Record<string, Operation<any, any>>> {
+export interface Service<O extends OperationMap = OperationMap> {
   name: string;
-  operations: Operations;
+  operations: O;
 }
 
 /**
- * Constructs a service for a set of operations.
+ * Constructs a service for a collection of operations.
  */
 export function service<O extends PartialOperationMap>(
   name: string,
@@ -201,7 +200,7 @@ export function service<O extends PartialOperationMap>(
 }
 
 /**
- * Opetions for the {@link operation} function.
+ * Options for the {@link operation} function.
  */
 export interface OperationOptions<_I, _O> {
   name?: string;
@@ -243,7 +242,7 @@ export type OperationInput<T, K extends keyof T> = T[K] extends Operation<infer 
 export type OperationOutput<T, K extends keyof T> = T[K] extends Operation<any, infer O> ? O : any;
 
 /**
- * A {@link Service} that includes a set of handlers for its operations.
+ * A {@link Service} that includes a collection of handlers for its operations.
  */
 export interface ServiceHandler<T extends OperationMap = OperationMap> extends Service<T> {
   handlers: ServiceHandlerFor<T>;
