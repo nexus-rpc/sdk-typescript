@@ -40,9 +40,9 @@ export async function installAsyncLocalStorage(als: AsyncLocalStorage<HandlerCon
 }
 
 /**
- * Get the asssociated handler context for the current async context.
+ * Get the associated handler context for the current async context.
  *
- * Meant to be called by frameworks, not handler implmentations.
+ * Meant to be called by frameworks, not handler implementations.
  */
 export function getHandlerContext<T extends HandlerContext = HandlerContext>(): T {
   if (asyncLocalStorage == null) {
