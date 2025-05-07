@@ -234,12 +234,12 @@ export type OperationKey<T> = {
 /**
  * A type that extracts the input type from an operation in a service.
  */
-export type OperationInput<T, K extends keyof T> = T[K] extends Operation<infer I, any> ? I : any;
+export type OperationInput<T> = T extends Operation<infer I, any> ? I : any;
 
 /**
  * A type that extracts the output type from an operation in a service.
  */
-export type OperationOutput<T, K extends keyof T> = T[K] extends Operation<any, infer O> ? O : any;
+export type OperationOutput<T> = T extends Operation<any, infer O> ? O : any;
 
 /**
  * A {@link Service} that includes a collection of handlers for its operations.

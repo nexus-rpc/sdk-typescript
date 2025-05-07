@@ -49,9 +49,19 @@ class MyServiceHandler implements nexus.ServiceHandlerFor<(typeof myService)["op
 const c1 = createNexusClient({ endpoint: "foo", service: myService });
 const c2 = createNexusClient({ endpoint: "foo", service: nexus.serviceHandler(myService, new MyServiceHandler()) });
 for (const c of [c1, c2]) {
-  const o1: Promise<string> = c.executeOperation("syncOp", "foo");
-  const o2: Promise<number> = c.executeOperation("fullOp", 3);
-  Promise.all([o1, o2]);
+  // Invoke via a string key.
+  const _o1: Promise<string> = c.executeOperation("syncOp", "foo");
+  const _o2: Promise<number> = c.executeOperation("fullOp", 3);
+
+  // Invoke via an operation reference.
+  const _o3: Promise<string> = c.executeOperation(myService.operations.syncOp, "foo");
+  const _o4: Promise<number> = c.executeOperation(myService.operations.fullOp, 3);
+
+  // We can't easily prevent this at compile time without unreasonably complicating the types, but we can at runtime.
+  const myOtherService = nexus.service("other service", {
+    otherOp: nexus.operation<number, number>(),
+  });
+  const _: Promise<number> = c.executeOperation(myOtherService.operations.otherOp, 3);
 }
 
 registerService(myServiceHandler);
@@ -59,10 +69,15 @@ registerService(myServiceHandler);
 //// Helper functions for type assertion.
 
 export interface NexusClient<T extends nexus.Service> {
+  executeOperation<O extends T["operations"][keyof T["operations"]]>(
+    op: O,
+    input: nexus.OperationInput<O>,
+  ): Promise<nexus.OperationOutput<O>>;
+
   executeOperation<K extends nexus.OperationKey<T["operations"]>>(
     op: K,
-    input: nexus.OperationInput<T["operations"], K>,
-  ): Promise<nexus.OperationOutput<T["operations"], K>>;
+    input: nexus.OperationInput<T["operations"][K]>,
+  ): Promise<nexus.OperationOutput<T["operations"][K]>>;
 }
 
 interface NexusClientOptions<T> {
