@@ -85,7 +85,7 @@ interface NexusClientOptions<T> {
   service: T;
 }
 
-function createNexusClient<T extends nexus.Service>(options: NexusClientOptions<T>): NexusClient<T> {
+export function createNexusClient<T extends nexus.Service>(options: NexusClientOptions<T>): NexusClient<T> {
   assert.equal(options.service.name, "service name");
   assert.deepEqual(options.service.operations, { syncOp: { name: "syncOp" }, fullOp: { name: "custom name" } });
   return {

@@ -2,7 +2,7 @@ import * as handler from "./handler";
 
 // Make it safe to use nexus-rpc with multiple versions installed.
 // Caching the promise prevents duplicate loading.
-export const asyncLocalStoragePromiseSymbol = Symbol.for("__nexus_context_storage_promise__");
+export const asyncLocalStoragePromiseSymbol = Symbol.for("__nexus_async_local_storage_promise__");
 
 /**
  * Install an AsyncLocalStorage instance for use in handler contexts.
@@ -16,6 +16,6 @@ export async function installAsyncLocalStorage() {
   }
   (globalThis as any)[asyncLocalStoragePromiseSymbol] = (async () => {
     const { AsyncLocalStorage } = await import("node:async_hooks");
-    handler.installAsyncLocalStorage(new AsyncLocalStorage());
+    handler.installContextStorage(new AsyncLocalStorage());
   })();
 }
