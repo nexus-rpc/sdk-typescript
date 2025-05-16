@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
-    "lib": ["es2022"],
+    // es2022 is required for Error.cause, DOM is required for ReadableStream.
+    // Both supported in Node 18+.
+    "lib": ["es2022", "DOM"],
     "target": "es2022",
     "module": "commonjs",
     "esModuleInterop": true,
