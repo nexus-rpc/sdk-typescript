@@ -1,12 +1,13 @@
+import { it, describe } from "node:test";
 import * as nexus from "./index";
 import * as assert from "node:assert/strict";
 
-export const myService = nexus.service("service name", {
+const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
   fullOp: nexus.operation<number, number>({ name: "custom name" }),
 });
 
-export const myServiceHandler = nexus.serviceHandler(myService, {
+const myServiceHandler = nexus.serviceHandler(myService, {
   async syncOp(input: string, _options: nexus.StartOperationOptions): Promise<string> {
     return input;
   },
@@ -26,78 +27,176 @@ export const myServiceHandler = nexus.serviceHandler(myService, {
   },
 });
 
-class MyServiceHandler implements nexus.ServiceHandlerFor<(typeof myService)["operations"]> {
-  async syncOp(input: string, _options: nexus.StartOperationOptions): Promise<string> {
-    return input;
-  }
-  fullOp: nexus.OperationHandler<number, number> = {
-    async start(input: number, _options) {
-      return { value: input };
-    },
-    async cancel(_token, _options) {
-      //
-    },
-    async getInfo(token, _options) {
-      return { token, state: "running" };
-    },
-    async getResult(_token, _options) {
-      return 3;
-    },
-  };
-}
-
-const c1 = createNexusClient({ endpoint: "foo", service: myService });
-const c2 = createNexusClient({ endpoint: "foo", service: nexus.serviceHandler(myService, new MyServiceHandler()) });
-for (const c of [c1, c2]) {
-  // Invoke via a string key.
-  const _o1: Promise<string> = c.executeOperation("syncOp", "foo");
-  const _o2: Promise<number> = c.executeOperation("fullOp", 3);
-
-  // Invoke via an operation reference.
-  const _o3: Promise<string> = c.executeOperation(myService.operations.syncOp, "foo");
-  const _o4: Promise<number> = c.executeOperation(myService.operations.fullOp, 3);
-
-  // We can't easily prevent this at compile time without unreasonably complicating the types, but we can at runtime.
-  const myOtherService = nexus.service("other service", {
-    otherOp: nexus.operation<number, number>(),
+describe("OperationKey", () => {
+  it("infers operation keys", () => {
+    const _k1: nexus.OperationKey<(typeof myService)["operations"]> = "syncOp";
+    const _k2: nexus.OperationKey<(typeof myService)["operations"]> = "fullOp";
   });
-  const _: Promise<number> = c.executeOperation(myOtherService.operations.otherOp, 3);
-}
+});
 
-registerService(myServiceHandler);
+describe("OperationInput", () => {
+  it("infers operation input type", () => {
+    const _i1: nexus.OperationInput<(typeof myService)["operations"]["syncOp"]> = "string";
+    const _i2: nexus.OperationInput<(typeof myService)["operations"]["fullOp"]> = 1;
+  });
+});
 
-//// Helper functions for type assertion.
+describe("OperationOutput", () => {
+  it("infers operation Output type", () => {
+    const _o1: nexus.OperationOutput<(typeof myService)["operations"]["syncOp"]> = "string";
+    const _o2: nexus.OperationOutput<(typeof myService)["operations"]["fullOp"]> = 1;
+  });
+});
 
-export interface NexusClient<T extends nexus.Service> {
-  executeOperation<O extends T["operations"][keyof T["operations"]]>(
-    op: O,
-    input: nexus.OperationInput<O>,
-  ): Promise<nexus.OperationOutput<O>>;
+describe("service", () => {
+  it("throws when registering a service with an empty name", () => {
+    assert.throws(() => nexus.service("", {}), /TypeError: Service name must be a non-empty string/);
+  });
+  it("throws when registering a duplicate operation", () => {
+    assert.throws(
+      () =>
+        nexus.service("service name", {
+          syncOp: nexus.operation<string, string>(),
+          syncOpAlias: nexus.operation<string, string>({ name: "syncOp" }),
+        }),
+      /TypeError: Duplicate operation definition for syncOp/,
+    );
+  });
+});
 
-  executeOperation<K extends nexus.OperationKey<T["operations"]>>(
-    op: K,
-    input: nexus.OperationInput<T["operations"][K]>,
-  ): Promise<nexus.OperationOutput<T["operations"][K]>>;
-}
+describe("serviceHandler", () => {
+  class MyServiceHandler implements nexus.ServiceHandlerFor<(typeof myService)["operations"]> {
+    async syncOp(input: string, _options: nexus.StartOperationOptions): Promise<string> {
+      return input;
+    }
+    fullOp: nexus.OperationHandler<number, number> = {
+      async start(input: number, _options) {
+        return { value: input };
+      },
+      async cancel(_token, _options) {
+        //
+      },
+      async getInfo(token, _options) {
+        return { token, state: "running" };
+      },
+      async getResult(_token, _options) {
+        return 3;
+      },
+    };
+  }
 
-interface NexusClientOptions<T> {
-  endpoint: string;
-  service: T;
-}
+  it("works with a class", () => {
+    const handler = new MyServiceHandler();
+    const serviceHandler = nexus.serviceHandler(myService, handler);
+    assert.equal(serviceHandler.operations.syncOp.name, "syncOp");
+    assert.equal(serviceHandler.operations.fullOp.name, "custom name");
+  });
+});
 
-export function createNexusClient<T extends nexus.Service>(options: NexusClientOptions<T>): NexusClient<T> {
-  assert.equal(options.service.name, "service name");
-  assert.deepEqual(options.service.operations, { syncOp: { name: "syncOp" }, fullOp: { name: "custom name" } });
-  return {
-    executeOperation: async () => {
-      // Simulate an operation execution
-      return {} as any;
-    },
+describe("ServiceRegistry", () => {
+  const registry = new nexus.ServiceRegistry([myServiceHandler]);
+  const startOptions: nexus.StartOperationOptions = {
+    abortSignal: new AbortController().signal,
+    headers: {},
+    links: [{ type: "test", url: new URL("http://test") }],
+    requestId: "test-req-id",
   };
-}
 
-function registerService<T extends nexus.ServiceHandler<any>>(service: T): void {
-  assert.deepEqual(Object.keys(service.operations), ["syncOp", "fullOp"]);
-  assert.deepEqual(Object.keys(service.handlers), ["syncOp", "fullOp"]);
-  // Register the service
+  it("throws when trying to register a duplicate service handler", () => {
+    assert.throws(
+      () => new nexus.ServiceRegistry([myServiceHandler, myServiceHandler]),
+      /TypeError: Duplicate registration of nexus service service name/,
+    );
+  });
+
+  it("throws when registering a duplicate operation", () => {
+    const handler = {
+      ...myServiceHandler,
+      operations: { ...myServiceHandler.operations, syncOpAlias: { name: "syncOp" } },
+    };
+    assert.throws(
+      () => new nexus.ServiceRegistry([handler as any]), // TS rejects this, but we want to test the runtime error.
+      /TypeError: Operation with name syncOp already registered for service service name/,
+    );
+  });
+
+  it("throws when registering missing a operation handler", () => {
+    const handler = {
+      ...myServiceHandler,
+      handlers: { syncOp: {} },
+    };
+    assert.throws(
+      () => new nexus.ServiceRegistry([handler as any]), // TS rejects this, but we want to test the runtime error.
+      /TypeError: No handler registered for fullOp on service service name/,
+    );
+  });
+
+  it("throws a not found error if a service or operation is not registered", async () => {
+    await assert.rejects(
+      () => registry.start("non existing service", "dontCare", createLazyValue("test"), startOptions),
+      /HandlerError: Service handler not registered/,
+    );
+
+    await assert.rejects(
+      () => registry.start("service name", "notFound", createLazyValue("test"), startOptions),
+      /HandlerError: Operation handler not registered/,
+    );
+  });
+
+  it("routes start to the correct handler", async () => {
+    assert.deepEqual(await registry.start("service name", "syncOp", createLazyValue("test"), startOptions), {
+      value: "test",
+    });
+    assert.deepEqual(await registry.start("service name", "custom name", createLazyValue(1), startOptions), {
+      value: 1,
+    });
+  });
+
+  it("routes getResult to the correct handler", async () => {
+    const options = {
+      abortSignal: new AbortController().signal,
+      headers: {},
+      wait: 0,
+    };
+    assert.rejects(
+      () => registry.getResult("service name", "syncOp", "token", options),
+      /HandlerError: Not implemented/,
+    );
+    assert.equal(await registry.getResult("service name", "custom name", "token", options), 3);
+  });
+
+  it("routes getInfo to the correct handler", async () => {
+    const options = {
+      abortSignal: new AbortController().signal,
+      headers: {},
+    };
+    assert.rejects(() => registry.getInfo("service name", "syncOp", "token", options), /HandlerError: Not implemented/);
+    assert.deepEqual(await registry.getInfo("service name", "custom name", "token", options), {
+      token: "token",
+      state: "running",
+    });
+  });
+
+  it("routes cancel to the correct handler", async () => {
+    const options = {
+      abortSignal: new AbortController().signal,
+      headers: {},
+    };
+    assert.rejects(() => registry.cancel("service name", "syncOp", "token", options), /HandlerError: Not implemented/);
+    assert.equal(await registry.cancel("service name", "custom name", "token", options), undefined);
+  });
+});
+
+function createLazyValue(value: unknown): nexus.LazyValue {
+  return new nexus.LazyValue(
+    {
+      deserialize() {
+        return value as any;
+      },
+      serialize() {
+        throw new Error("Not implemented");
+      },
+    },
+    {},
+  );
 }

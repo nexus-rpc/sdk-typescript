@@ -188,14 +188,26 @@ export function service<O extends PartialOperationMap>(
   name: string,
   operations: O,
 ): Service<OperationMapFromPartial<O>> {
+  if (!name) {
+    throw new TypeError("Service name must be a non-empty string");
+  }
+  const uniqueNames = new Set<string>();
+
   const fullOps: OperationMapFromPartial<O> = Object.fromEntries(
-    Object.entries(operations).map(([key, op]) => [
-      key,
-      {
-        ...op,
-        name: op.name || key,
-      },
-    ]),
+    Object.entries(operations).map(([key, op]) => {
+      const name = op.name || key;
+      if (uniqueNames.has(name)) {
+        throw new TypeError(`Duplicate operation definition for ${name}`);
+      }
+      uniqueNames.add(name);
+      return [
+        key,
+        {
+          ...op,
+          name,
+        },
+      ];
+    }),
   ) as any; // TS is having a hard time inferring the correct type here.
   return { name, operations: fullOps };
 }
@@ -260,14 +272,14 @@ export function serviceHandler<T extends OperationMap>(
 
   for (const [k, op] of Object.entries(service.operations)) {
     if (!op.name) {
-      throw new TypeError(`Tried to register a Nexus operation with no name for service ${service.name} with key ${k}`);
+      throw new TypeError(`Tried to register an operation with no name for service ${service.name} with key ${k}`);
     }
     if (ops.has(op.name)) {
       throw new TypeError(`Operation with name ${op.name} already registered for service ${service.name}`);
     }
     const handler = handlers[k];
     if (!handler) {
-      throw new TypeError(`No handler registred for ${k} on service ${service.name}`);
+      throw new TypeError(`No handler registered for ${k} on service ${service.name}`);
     }
     ops.add(op.name);
   }
@@ -282,15 +294,12 @@ export function serviceHandler<T extends OperationMap>(
  * A collection of service handlers that dispatches requests to the registered service and operation handler.
  */
 export class ServiceRegistry {
-  private services = new Map<
-    string,
-    Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>
-  >();
+  private services = new Map<string, Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>>();
 
   constructor(services: ServiceHandler[]) {
-    for (const s of services ?? []) {
+    for (const s of services) {
       if (!s.name) {
-        throw new TypeError('Tried to register a Nexus service with no name');
+        throw new TypeError("Tried to register a Nexus service with no name");
       }
       if (this.services.has(s.name)) {
         throw new TypeError(`Duplicate registration of nexus service ${s.name}`);
@@ -298,14 +307,14 @@ export class ServiceRegistry {
       const ops = new Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>();
       for (const [k, op] of Object.entries(s.operations)) {
         if (!op.name) {
-          throw new TypeError(`Tried to register a Nexus operation with no name for service ${s.name} with key ${k}`);
+          throw new TypeError(`Tried to register an operation with no name for service ${s.name} with key ${k}`);
         }
         if (ops.has(op.name)) {
           throw new TypeError(`Operation with name ${op.name} already registered for service ${s.name}`);
         }
         const handler = s.handlers[k];
         if (!handler) {
-          throw new TypeError(`No handler registred for ${k} on service ${s.name}`);
+          throw new TypeError(`No handler registered for ${k} on service ${s.name}`);
         }
         ops.set(op.name, handler);
       }
@@ -331,19 +340,29 @@ export class ServiceRegistry {
     return operationHandler;
   }
 
-  async start(service: string, operation: string, lv: LazyValue, options: StartOperationOptions): Promise<HandlerStartOperationResult<any>> {
+  async start(
+    service: string,
+    operation: string,
+    lv: LazyValue,
+    options: StartOperationOptions,
+  ): Promise<HandlerStartOperationResult<any>> {
     const handler = this.getHandler(service, operation);
     const input = await lv.consume<any>();
-    if (typeof handler === 'function') {
+    if (typeof handler === "function") {
       const value = await handler(input, options);
       return { value };
     }
     return await handler.start(input, options);
   }
 
-  async getResult(service: string, operation: string, token: string, options: GetOperationResultOptions): Promise<LazyValue> {
+  async getResult(
+    service: string,
+    operation: string,
+    token: string,
+    options: GetOperationResultOptions,
+  ): Promise<LazyValue> {
     const handler = this.getHandler(service, operation);
-    if (typeof handler === 'function') {
+    if (typeof handler === "function") {
       throw new HandlerError({
         type: "NOT_IMPLEMENTED",
         message: "Not implemented",
@@ -352,9 +371,14 @@ export class ServiceRegistry {
     return await handler.getResult(token, options);
   }
 
-  async getInfo(service: string, operation: string, token: string, options: GetOperationInfoOptions): Promise<OperationInfo> {
+  async getInfo(
+    service: string,
+    operation: string,
+    token: string,
+    options: GetOperationInfoOptions,
+  ): Promise<OperationInfo> {
     const handler = this.getHandler(service, operation);
-    if (typeof handler === 'function') {
+    if (typeof handler === "function") {
       throw new HandlerError({
         type: "NOT_IMPLEMENTED",
         message: "Not implemented",
@@ -365,7 +389,7 @@ export class ServiceRegistry {
 
   async cancel(service: string, operation: string, token: string, options: CancelOperationOptions): Promise<void> {
     const handler = this.getHandler(service, operation);
-    if (typeof handler === 'function') {
+    if (typeof handler === "function") {
       throw new HandlerError({
         type: "NOT_IMPLEMENTED",
         message: "Not implemented",
