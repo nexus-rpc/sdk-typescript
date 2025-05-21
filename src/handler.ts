@@ -15,7 +15,7 @@ export interface HandlerInfo {
   operation: string;
   /** Request header fields received by the server. */
   headers: Record<string, string>;
-  /** Signaled when the current request is canceled.  */
+  /** Signaled when the current request is canceled. */
   abortSignal: AbortSignal;
 }
 
@@ -62,7 +62,7 @@ export function getHandlerContext<T extends HandlerContext = HandlerContext>(): 
 /**
  * Runs the given funtion in a context where the given HandlerContext instance is available.
  *
- * Meant to be called by frameworks, not handler implmentations.
+ * Meant to be called by frameworks, not handler implementations.
  */
 export async function withContext<T extends HandlerContext, R>(context: T, fn: () => Promise<R>): Promise<R> {
   if (contextStorage == null) {
@@ -72,7 +72,7 @@ export async function withContext<T extends HandlerContext, R>(context: T, fn: (
 }
 
 /**
- * Returns true if the current context is a handler context where {@link extractHandlerInfo} and {@handlerLinks} can be called.
+ * Returns true if the current context is a handler context where {@link extractHandlerInfo} and {@link handlerLinks} can be called.
  * It returns true when called from any OperationHandler method or middleware.
  */
 export function inHandlerContext(): boolean {
@@ -82,7 +82,7 @@ export function inHandlerContext(): boolean {
 /**
  * Extracts the {@link HandlerInfo} for the current request's context.
  *
- * Must be called within a hanler method or middleware function or this method will throw a {@link ReferenceError}.
+ * Must be called within a handler method or middleware function or this method will throw a {@link ReferenceError}.
  * {@link inHandlerContext} can be used to verify the context is valid.
  */
 export function extractHandlerInfo(): HandlerInfo {
@@ -93,7 +93,7 @@ export function extractHandlerInfo(): HandlerInfo {
  * Gets the links associated with the current operation to be propagated back to the caller.
  *
  * The returned array is safe to mutate for attaching links.
- * Links are only attached on successful responses to the StartOperation Handler method.
+ * Links are only attached on successful invocations of the `OperationHandler.start` method.
  * Must be called within a handler method or middleware function or this method will throw a {@link ReferenceError}.
  * {@link inHandlerContext} can be used to verify the context is valid.
  */

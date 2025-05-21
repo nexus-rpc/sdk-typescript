@@ -63,7 +63,7 @@ export interface HandlerErrorMessageOptions {
   type: HandlerErrorType;
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
-   * type. For example, INTERNAL is not retryable by default unless specified otherwise.
+   * type. For example, INTERNAL is retryable by default unless specified otherwise.
    */
   retryable?: boolean;
 }
@@ -76,7 +76,7 @@ export interface HandlerErrorCauseOptions extends ErrorOptions {
   type: HandlerErrorType;
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
-   * type. For example, INTERNAL is not retryable by default unless specified otherwise.
+   * type. For example, INTERNAL is retryable by default unless specified otherwise.
    */
   retryable?: boolean;
 }
@@ -96,7 +96,7 @@ export class HandlerError extends Error {
   public readonly type: HandlerErrorType;
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
-   * type. For example, INTERNAL is not retryable by default unless specified otherwise.
+   * type. For example, INTERNAL is retryable by default unless specified otherwise.
    */
   public readonly retryable?: boolean;
 
@@ -142,16 +142,16 @@ export class OperationError extends Error {
 }
 
 /**
- * Link contains an URL and a Type that can be used to decode the URL.
- * Links can contain any arbitrary information as a percent-encoded URL.
+ * Link contains a URL and a type that can be used to decode the URL.
  * It can be used to pass information about the caller to the handler, or vice-versa.
  */
 export interface Link {
-  /** URL information about the link. It must be URL percent-encoded. */
+  /** An arbitrary percent-encoded URL. */
   url: URL;
   /**
-   * Type can describe an actual data type for decoding the URL.
-   * Valid chars: alphanumeric, '_', '.', '/'
+   * Type information for decoding the URL.
+   *
+   * Valid chars: alphanumeric, '_', '.', '/'.
    */
   type: string;
 }
