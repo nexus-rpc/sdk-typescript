@@ -17,7 +17,7 @@ export class LazyValue {
 
     /** ReadableStream that contains request or response data. May be undefined for empty data. */
     public readonly stream?: ReadableStream<Uint8Array>,
-  ) { }
+  ) {}
 
   /**
    * Consume the underlying reader stream, deserializing via the embedded serializer.
@@ -75,5 +75,3 @@ export interface Serializer {
   /** Deserialize decodes a {@link Content} into a value. */
   deserialize<T = unknown>(content: Content): T;
 }
-
-

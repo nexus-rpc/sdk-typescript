@@ -5,8 +5,9 @@ import { LazyValue } from "./serializer";
  * Options for the {@link OperationHandler["start"]} method.
  */
 export interface StartOperationOptions {
-  /** Signaled when the current request is canceled.  */
+  /** Signaled when the current request is canceled. */
   abortSignal: AbortSignal;
+  /** Request headers. */
   headers: Record<string, string>;
   /**
    * Callbacks are used to deliver completion of async operations.
@@ -35,8 +36,9 @@ export interface StartOperationOptions {
  * Options for the {@link OperationHandler["getInfo"]} method.
  */
 export interface GetOperationInfoOptions {
-  /** Signaled when the current request is canceled.  */
+  /** Signaled when the current request is canceled. */
   abortSignal: AbortSignal;
+  /** Request headers. */
   headers: Record<string, string>;
 }
 
@@ -44,9 +46,14 @@ export interface GetOperationInfoOptions {
  * Options for the {@link OperationHandler["getResult"]} method.
  */
 export interface GetOperationResultOptions {
-  /** Signaled when the current request is canceled.  */
+  /** Signaled when the current request is canceled. */
   abortSignal: AbortSignal;
+  /** Request headers. */
   headers: Record<string, string>;
+  /**
+   * If specified and non-zero, reflects the duration the caller has indicated that it wants to wait for operation
+   * completion, turning the request into a long poll.
+   */
   wait: number;
 }
 
@@ -54,8 +61,9 @@ export interface GetOperationResultOptions {
  * Options for the {@link OperationHandler["cancel"]} method.
  */
 export interface CancelOperationOptions {
-  /** Signaled when the current request is canceled.  */
+  /** Signaled when the current request is canceled. */
   abortSignal: AbortSignal;
+  /** Request headers. */
   headers: Record<string, string>;
 }
 
@@ -66,12 +74,16 @@ export interface HandlerStartOperationResultSync<T> {
 
 /** A result that indicates that an operation has been accepted and will complete asynchronously. */
 export interface HandlerStartOperationResultAsync {
-  // A token to identify the operation in followup handler methods such as {@link OperationHandler.getResult} and {@link
-  // OperationHandler.cancel}.
+  /**
+   * A token to identify the operation in followup handler methods such as {@link OperationHandler["getResult"]} and
+   * {@link OperationHandler["cancel"]}.
+   */
   token: string;
 }
 
-// The return type from the {@link OperaitonHandler.start}. May be either a synchronous or asynchornous.
+/**
+ * The return type from the {@link OperationHandler["start"]}. May be either a synchronous or asynchornous.
+ */
 export type HandlerStartOperationResult<T> = HandlerStartOperationResultSync<T> | HandlerStartOperationResultAsync;
 
 declare const inputBrand: unique symbol;
@@ -106,7 +118,7 @@ export interface OperationHandler<I, O> {
    *
    * Throw an {@link OperationError} to indicate that an operation completed as failed or canceled.
    *
-   * When {@link GetOperationResultOptions.wait} is greater than zero, this request should be treated as a long poll.
+   * When {@link GetOperationResultOptions["wait"]} is greater than zero, this request should be treated as a long poll.
    * Note that the specified wait duration may be longer than the configured client or server side request timeout, and
    * should be handled separately.
    *
@@ -136,7 +148,7 @@ export interface OperationHandler<I, O> {
 }
 
 /**
- * A shortcut for defining an operation handler that only implements the {@link OperationHandler.start} method and
+ * A shortcut for defining an operation handler that only implements the {@link OperationHandler["start"]} method and
  * always returns a {@link HandlerStartOperationResultSync}.
  */
 export type SyncOperationHandler<I, O> = (input: I, options: StartOperationOptions) => Promise<O>;
