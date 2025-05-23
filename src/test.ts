@@ -8,20 +8,20 @@ const myService = nexus.service("service name", {
 });
 
 const myServiceHandler = nexus.serviceHandler(myService, {
-  async syncOp(input: string, _options: nexus.StartOperationOptions): Promise<string> {
+  async syncOp(_ctx, input) {
     return input;
   },
   fullOp: {
-    async start(input: number, _options) {
+    async start(_ctx, input) {
       return { value: input };
     },
-    async cancel(_token, _options) {
+    async cancel(_ctx, _token) {
       //
     },
-    async getInfo(token, _options) {
+    async getInfo(_ctx, token) {
       return { token, state: "running" };
     },
-    async getResult(_token, _options) {
+    async getResult(_ctx, _token) {
       return 3;
     },
   },
@@ -66,20 +66,20 @@ describe("service", () => {
 
 describe("serviceHandler", () => {
   class MyServiceHandler implements nexus.ServiceHandlerFor<(typeof myService)["operations"]> {
-    async syncOp(input: string, _options: nexus.StartOperationOptions): Promise<string> {
+    async syncOp(_ctx: nexus.StartOperationContext, input: string): Promise<string> {
       return input;
     }
     fullOp: nexus.OperationHandler<number, number> = {
-      async start(input: number, _options) {
+      async start(_ctx, input) {
         return { value: input };
       },
-      async cancel(_token, _options) {
+      async cancel(_ctx, _token) {
         //
       },
-      async getInfo(token, _options) {
+      async getInfo(_ctx, token) {
         return { token, state: "running" };
       },
-      async getResult(_token, _options) {
+      async getResult(_ctx, _token) {
         return 3;
       },
     };
@@ -95,12 +95,14 @@ describe("serviceHandler", () => {
 
 describe("ServiceRegistry", () => {
   const registry = new nexus.ServiceRegistry([myServiceHandler]);
-  const startOptions: nexus.StartOperationOptions = {
+  const mkStartCtx = (service: string, operation: string): nexus.StartOperationContext => ({
+    info: { service, operation },
     abortSignal: new AbortController().signal,
     headers: {},
-    links: [{ type: "test", url: new URL("http://test") }],
+    callerLinks: [{ type: "test", url: new URL("http://test") }],
+    handlerLinks: [],
     requestId: "test-req-id",
-  };
+  });
 
   it("throws when trying to register a duplicate service handler", () => {
     assert.throws(
@@ -133,57 +135,60 @@ describe("ServiceRegistry", () => {
 
   it("throws a not found error if a service or operation is not registered", async () => {
     await assert.rejects(
-      () => registry.start("non existing service", "dontCare", createLazyValue("test"), startOptions),
+      () => registry.start(mkStartCtx("non existing service", "dontCare"), createLazyValue("test")),
       /HandlerError: Service handler not registered/,
     );
 
     await assert.rejects(
-      () => registry.start("service name", "notFound", createLazyValue("test"), startOptions),
+      () => registry.start(mkStartCtx("service name", "notFound"), createLazyValue("test")),
       /HandlerError: Operation handler not registered/,
     );
   });
 
   it("routes start to the correct handler", async () => {
-    assert.deepEqual(await registry.start("service name", "syncOp", createLazyValue("test"), startOptions), {
+    assert.deepEqual(await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")), {
       value: "test",
     });
-    assert.deepEqual(await registry.start("service name", "custom name", createLazyValue(1), startOptions), {
+    assert.deepEqual(await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)), {
       value: 1,
     });
   });
 
   it("routes getResult to the correct handler", async () => {
-    const options = {
+    const ctx = {
+      info: { service: "service name", operation: "syncOp" },
       abortSignal: new AbortController().signal,
       headers: {},
       wait: 0,
     };
-    assert.rejects(
-      () => registry.getResult("service name", "syncOp", "token", options),
-      /HandlerError: Not implemented/,
-    );
-    assert.equal(await registry.getResult("service name", "custom name", "token", options), 3);
+    assert.rejects(() => registry.getResult(ctx, "token"), /HandlerError: Not implemented/);
+    ctx.info.operation = "custom name";
+    assert.equal(await registry.getResult(ctx, "token"), 3);
   });
 
   it("routes getInfo to the correct handler", async () => {
-    const options = {
+    const ctx = {
+      info: { service: "service name", operation: "syncOp" },
       abortSignal: new AbortController().signal,
       headers: {},
     };
-    assert.rejects(() => registry.getInfo("service name", "syncOp", "token", options), /HandlerError: Not implemented/);
-    assert.deepEqual(await registry.getInfo("service name", "custom name", "token", options), {
+    assert.rejects(() => registry.getInfo(ctx, "token"), /HandlerError: Not implemented/);
+    ctx.info.operation = "custom name";
+    assert.deepEqual(await registry.getInfo(ctx, "token"), {
       token: "token",
       state: "running",
     });
   });
 
   it("routes cancel to the correct handler", async () => {
-    const options = {
+    const ctx = {
+      info: { service: "service name", operation: "syncOp" },
       abortSignal: new AbortController().signal,
       headers: {},
     };
-    assert.rejects(() => registry.cancel("service name", "syncOp", "token", options), /HandlerError: Not implemented/);
-    assert.equal(await registry.cancel("service name", "custom name", "token", options), undefined);
+    assert.rejects(() => registry.cancel(ctx, "token"), /HandlerError: Not implemented/);
+    ctx.info.operation = "custom name";
+    assert.equal(await registry.cancel(ctx, "token"), undefined);
   });
 });
 

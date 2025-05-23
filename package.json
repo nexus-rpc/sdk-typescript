@@ -35,8 +35,9 @@
     "node": ">= 18.0.0"
   },
   "files": [
+    "lib",
     "src",
-    "lib"
+    "!**/*test*"
   ],
   "devDependencies": {
     "@eslint/js": "^9.21.0",
