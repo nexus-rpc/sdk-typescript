@@ -3,24 +3,17 @@ import { Operation, OperationMap, Service } from "./operation";
 import { LazyValue } from "./serializer";
 
 /**
- * Contains general information for an operation invocation, across different handler methods.
+ * General handler context that is common to all handler methods.
  */
-export interface HandlerInfo {
+export interface OperationContext {
   /** Name of the service that contains the operation. */
   service: string;
   /** Name of the operation. */
   operation: string;
-}
-
-/**
- * General handler context that is common to all handler methods.
- */
-export interface OperationContext {
   /** Request header fields. */
   headers: Record<string, string>;
   /** Signaled when the current request is canceled. */
   abortSignal: AbortSignal;
-  info: HandlerInfo;
 }
 
 /**
@@ -234,7 +227,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   }
 
   private getHandler(ctx: OperationContext): OperationHandler<any, any> | SyncOperationHandler<any, any> {
-    const { service, operation } = ctx.info;
+    const { service, operation } = ctx;
     const serviceHandler = this.services.get(service);
     if (serviceHandler == null) {
       throw new HandlerError({

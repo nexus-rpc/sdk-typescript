@@ -96,7 +96,8 @@ describe("serviceHandler", () => {
 describe("ServiceRegistry", () => {
   const registry = new nexus.ServiceRegistry([myServiceHandler]);
   const mkStartCtx = (service: string, operation: string): nexus.StartOperationContext => ({
-    info: { service, operation },
+    service,
+    operation,
     abortSignal: new AbortController().signal,
     headers: {},
     callerLinks: [{ type: "test", url: new URL("http://test") }],
@@ -156,24 +157,26 @@ describe("ServiceRegistry", () => {
 
   it("routes getResult to the correct handler", async () => {
     const ctx = {
-      info: { service: "service name", operation: "syncOp" },
+      service: "service name",
+      operation: "syncOp",
       abortSignal: new AbortController().signal,
       headers: {},
       wait: 0,
     };
     assert.rejects(() => registry.getResult(ctx, "token"), /HandlerError: Not implemented/);
-    ctx.info.operation = "custom name";
+    ctx.operation = "custom name";
     assert.equal(await registry.getResult(ctx, "token"), 3);
   });
 
   it("routes getInfo to the correct handler", async () => {
     const ctx = {
-      info: { service: "service name", operation: "syncOp" },
+      service: "service name",
+      operation: "syncOp",
       abortSignal: new AbortController().signal,
       headers: {},
     };
     assert.rejects(() => registry.getInfo(ctx, "token"), /HandlerError: Not implemented/);
-    ctx.info.operation = "custom name";
+    ctx.operation = "custom name";
     assert.deepEqual(await registry.getInfo(ctx, "token"), {
       token: "token",
       state: "running",
@@ -182,12 +185,13 @@ describe("ServiceRegistry", () => {
 
   it("routes cancel to the correct handler", async () => {
     const ctx = {
-      info: { service: "service name", operation: "syncOp" },
+      service: "service name",
+      operation: "syncOp",
       abortSignal: new AbortController().signal,
       headers: {},
     };
     assert.rejects(() => registry.cancel(ctx, "token"), /HandlerError: Not implemented/);
-    ctx.info.operation = "custom name";
+    ctx.operation = "custom name";
     assert.equal(await registry.cancel(ctx, "token"), undefined);
   });
 });
