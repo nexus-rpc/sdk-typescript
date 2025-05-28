@@ -15,7 +15,7 @@ export interface HandlerInfo {
 /**
  * General handler context that is common to all handler methods.
  */
-export interface HandlerContext {
+export interface OperationContext {
   /** Request header fields. */
   headers: Record<string, string>;
   /** Signaled when the current request is canceled. */
@@ -26,7 +26,7 @@ export interface HandlerContext {
 /**
  * Context for the {@link OperationHandler["start"]} method.
  */
-export interface StartOperationContext extends HandlerContext {
+export interface StartOperationContext extends OperationContext {
   /**
    * Callbacks are used to deliver completion of async operations.
    * This value may optionally be set by the client and should be called by a handler upon completion if the started
@@ -59,12 +59,12 @@ export interface StartOperationContext extends HandlerContext {
 /**
  * Context for the {@link OperationHandler["getInfo"]} method.
  */
-export type GetOperationInfoContext = HandlerContext
+export type GetOperationInfoContext = OperationContext
 
 /**
  * Context for the {@link OperationHandler["getResult"]} method.
  */
-export interface GetOperationResultContext extends HandlerContext {
+export interface GetOperationResultContext extends OperationContext {
   /**
    * If specified and non-zero, reflects the duration the caller has indicated that it wants to wait for operation
    * completion, turning the request into a long poll.
@@ -75,7 +75,7 @@ export interface GetOperationResultContext extends HandlerContext {
 /**
  * Context for the {@link OperationHandler["cancel"]} method.
  */
-export type CancelOperationContext = HandlerContext
+export type CancelOperationContext = OperationContext
 
 /** A result that indicates that an operation completed successfully. */
 export interface HandlerStartOperationResultSync<T> {
@@ -92,7 +92,7 @@ export interface HandlerStartOperationResultAsync {
 }
 
 /**
- * The return type from the {@link OperationHandler["start"]}. May be either a synchronous or asynchornous.
+ * The return type from the {@link OperationHandler["start"]}. May be synchronous or asynchronous.
  */
 export type HandlerStartOperationResult<T> = HandlerStartOperationResultSync<T> | HandlerStartOperationResultAsync;
 
@@ -233,7 +233,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     }
   }
 
-  private getHandler(ctx: HandlerContext): OperationHandler<any, any> | SyncOperationHandler<any, any> {
+  private getHandler(ctx: OperationContext): OperationHandler<any, any> | SyncOperationHandler<any, any> {
     const { service, operation } = ctx.info;
     const serviceHandler = this.services.get(service);
     if (serviceHandler == null) {
