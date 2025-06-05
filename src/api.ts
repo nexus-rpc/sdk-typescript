@@ -1,5 +1,3 @@
-import { SymbolBasedInstanceOf } from "./helpers";
-
 /** A representation of the variable states of an operation. */
 export type OperationState = "succeeded" | "failed" | "canceled" | "running";
 
@@ -90,10 +88,12 @@ export type HandlerErrorOptions = HandlerErrorMessageOptions | HandlerErrorCause
  * A special error that can be returned from {@link OperationHandler} methods for failing a request with a custom status
  * code and failure message.
  */
-@SymbolBasedInstanceOf("HandlerError")
 export class HandlerError extends Error {
+  public readonly name = "HandlerError";
+
   /** One of the predefined error types. */
   public readonly type: HandlerErrorType;
+
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
    * type. For example, INTERNAL is retryable by default unless specified otherwise.
@@ -130,8 +130,9 @@ export type OperationErrorOptions = OperationErrorMessageOptions | OperationErro
 /**
  * An error that represents "failed" and "canceled" operation results.
  */
-@SymbolBasedInstanceOf("OperationError")
 export class OperationError extends Error {
+  public readonly name = "OperationError";
+
   /** State of the operation. */
   public readonly state: "canceled" | "failed";
 

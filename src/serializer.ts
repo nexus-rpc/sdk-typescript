@@ -1,10 +1,7 @@
-import { SymbolBasedInstanceOf } from "./helpers";
-
 /**
  * A container for an value encoded in an underlying stream.
  * It is used to stream inputs and outputs in the various client and server APIs.
  */
-@SymbolBasedInstanceOf("LazyValue")
 export class LazyValue {
   constructor(
     readonly serializer: Serializer,
