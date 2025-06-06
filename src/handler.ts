@@ -43,16 +43,16 @@ export interface StartOperationContext extends OperationContext {
   readonly requestId?: string;
 
   /**
-   * Links that contain arbitrary caller information, used as metadata for the call.
+   * Inbound links that contain arbitrary information, e.g. provided by the caller.
+   * Used as metadata for the call.
    */
-  readonly callerLinks: Link[];
+  readonly inboundLinks: Link[];
 
   /**
-   * Links that may be attached by handler implementations to be propagated back to the caller.
-   *
-   * Handlers should mutate this array directly, e.g. by calling `push` directly.
+   * Outbound links that will be propagated back to the caller. A handler implementation may
+   * mutate this array, e.g. by calling `push` directly, to attach additional links.
    */
-  readonly handlerLinks: Link[];
+  readonly outboundLinks: Link[];
 }
 
 /**
@@ -65,10 +65,12 @@ export type GetOperationInfoContext = OperationContext;
  */
 export interface GetOperationResultContext extends OperationContext {
   /**
-   * If specified and non-zero, reflects the duration the caller has indicated that it wants to wait for operation
-   * completion, turning the request into a long poll.
+   * If specified and non-zero, reflects the duration (in milliseconds) the caller has indicated that it wants to wait
+   * for operation completion, turning the request into a long poll.
+   *
+   * @experimental
    */
-  readonly wait: number;
+  readonly timeoutMs: number | undefined;
 }
 
 /**
@@ -246,7 +248,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     }
   }
 
-  private getHandler(
+  private getOperationHandler(
     ctx: OperationContext,
   ): OperationHandler<any, any> | SyncOperationHandler<any, any> {
     const { service, operation } = ctx;
@@ -271,7 +273,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     ctx: StartOperationContext,
     lv: LazyValue,
   ): Promise<HandlerStartOperationResult<any>> {
-    const handler = this.getHandler(ctx);
+    const handler = this.getOperationHandler(ctx);
     const input = await lv.consume<any>();
     if (typeof handler === "function") {
       const value = await handler(ctx, input);
@@ -281,7 +283,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   }
 
   async getResult(ctx: GetOperationResultContext, token: string): Promise<LazyValue> {
-    const handler = this.getHandler(ctx);
+    const handler = this.getOperationHandler(ctx);
     if (typeof handler === "function") {
       throw new HandlerError({
         type: "NOT_IMPLEMENTED",
@@ -292,7 +294,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   }
 
   async getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo> {
-    const handler = this.getHandler(ctx);
+    const handler = this.getOperationHandler(ctx);
     if (typeof handler === "function") {
       throw new HandlerError({
         type: "NOT_IMPLEMENTED",
@@ -303,7 +305,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   }
 
   async cancel(ctx: CancelOperationContext, token: string): Promise<void> {
-    const handler = this.getHandler(ctx);
+    const handler = this.getOperationHandler(ctx);
     if (typeof handler === "function") {
       throw new HandlerError({
         type: "NOT_IMPLEMENTED",
