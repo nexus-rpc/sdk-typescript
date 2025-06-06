@@ -1,4 +1,4 @@
-import { SymbolBasedInstanceOf } from "./helpers";
+import { injectSymbolBasedInstanceOf } from "./helpers";
 
 /** A representation of the variable states of an operation. */
 export type OperationState = "succeeded" | "failed" | "canceled" | "running";
@@ -90,7 +90,6 @@ export type HandlerErrorOptions = HandlerErrorMessageOptions | HandlerErrorCause
  * A special error that can be returned from {@link OperationHandler} methods for failing a request with a custom status
  * code and failure message.
  */
-@SymbolBasedInstanceOf("HandlerError")
 export class HandlerError extends Error {
   /** One of the predefined error types. */
   public readonly type: HandlerErrorType;
@@ -106,6 +105,8 @@ export class HandlerError extends Error {
     this.retryable = options?.retryable;
   }
 }
+
+injectSymbolBasedInstanceOf(HandlerError, "HandlerError");
 
 /**
  * Options for constructing an {@link OperationError} from a message and operation state.
@@ -130,7 +131,6 @@ export type OperationErrorOptions = OperationErrorMessageOptions | OperationErro
 /**
  * An error that represents "failed" and "canceled" operation results.
  */
-@SymbolBasedInstanceOf("OperationError")
 export class OperationError extends Error {
   /** State of the operation. */
   public readonly state: "canceled" | "failed";
@@ -140,6 +140,8 @@ export class OperationError extends Error {
     this.state = options.state;
   }
 }
+
+injectSymbolBasedInstanceOf(OperationError, "OperationError");
 
 /**
  * Link contains a URL and a type that can be used to decode the URL.

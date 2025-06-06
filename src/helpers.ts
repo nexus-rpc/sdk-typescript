@@ -4,8 +4,7 @@ export interface Class<E> {
 }
 
 /**
- * A decorator to be used on classes. It adds the 'name' property AND provides a custom
- * 'instanceof' handler that works correctly across execution contexts.
+ * Inject a custom 'instanceof' handler on the given class, that works correctly across execution contexts.
  *
  * ### Details ###
  *
@@ -27,27 +26,27 @@ export interface Class<E> {
  * cross-copies-of-the-same-lib safe. It works by adding a special symbol property to the prototype of 'clazz', and then
  * checking for the presence of that symbol.
  */
-export function SymbolBasedInstanceOf<E>(markerName: string): (clazz: Class<E>) => void {
-  return (clazz: Class<E>): void => {
-    const marker = Symbol.for(`__nexus_is${markerName}`);
+export function injectSymbolBasedInstanceOf<E>(clazz: Class<E>, markerName: string): void {
+  // It may seem redundant to have an explicit markerName argument here. Can't we simply use the class
+  // function name for that? Unfortunately, no, as the class name may get mangled if the file gets minified.
+  const marker = Symbol.for(`__nexus_is${markerName}`);
 
-    Object.defineProperty(clazz.prototype, "name", { value: markerName, enumerable: true });
-    Object.defineProperty(clazz.prototype, marker, { value: true, enumerable: false });
-    Object.defineProperty(clazz, Symbol.hasInstance, {
-      value: function (this: any, value: object): boolean {
-        if (this === clazz) {
-          return typeof value === "object" && value !== null && (value as any)[marker] === true;
-        } else {
-          // 'this' must be a _subclass_ of clazz that doesn't redefined [Symbol.hasInstance], so that it inherited
-          // from clazz's [Symbol.hasInstance]. If we don't handle this particular situation, then
-          // `x instanceof SubclassOfParent` would return true for any instance of 'Parent', which is clearly wrong.
-          //
-          // Ideally, it'd be preferable to avoid this case entirely, by making sure that all subclasses of 'clazz'
-          // redefine [Symbol.hasInstance], but we can't enforce that. We therefore fallback to the default instanceof
-          // behavior (which is NOT cross-realm safe).
-          return this.prototype.isPrototypeOf(value); // eslint-disable-line no-prototype-builtins
-        }
-      },
-    });
-  };
+  Object.defineProperty(clazz.prototype, "name", { value: markerName, enumerable: true });
+  Object.defineProperty(clazz.prototype, marker, { value: true, enumerable: false });
+  Object.defineProperty(clazz, Symbol.hasInstance, {
+    value: function (this: any, value: object): boolean {
+      if (this === clazz) {
+        return typeof value === "object" && value !== null && (value as any)[marker] === true;
+      } else {
+        // 'this' must be a _subclass_ of clazz that doesn't redefined [Symbol.hasInstance], so that it inherited
+        // from clazz's [Symbol.hasInstance]. If we don't handle this particular situation, then
+        // `x instanceof SubclassOfParent` would return true for any instance of 'Parent', which is clearly wrong.
+        //
+        // Ideally, it'd be preferable to avoid this case entirely, by making sure that all subclasses of 'clazz'
+        // redefine [Symbol.hasInstance], but we can't enforce that. We therefore fallback to the default instanceof
+        // behavior (which is NOT cross-realm safe).
+        return this.prototype.isPrototypeOf(value); // eslint-disable-line no-prototype-builtins
+      }
+    },
+  });
 }
