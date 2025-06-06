@@ -50,7 +50,10 @@ describe("OperationOutput", () => {
 
 describe("service", () => {
   it("throws when registering a service with an empty name", () => {
-    assert.throws(() => nexus.service("", {}), /TypeError: Service name must be a non-empty string/);
+    assert.throws(
+      () => nexus.service("", {}),
+      /TypeError: Service name must be a non-empty string/,
+    );
   });
   it("throws when registering a duplicate operation", () => {
     assert.throws(
@@ -147,12 +150,18 @@ describe("ServiceRegistry", () => {
   });
 
   it("routes start to the correct handler", async () => {
-    assert.deepEqual(await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")), {
-      value: "test",
-    });
-    assert.deepEqual(await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)), {
-      value: 1,
-    });
+    assert.deepEqual(
+      await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")),
+      {
+        value: "test",
+      },
+    );
+    assert.deepEqual(
+      await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
+      {
+        value: 1,
+      },
+    );
   });
 
   it("routes getResult to the correct handler", async () => {

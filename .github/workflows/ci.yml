@@ -20,6 +20,7 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run lint
+      - run: npm run format
 
       - run: npm run build:docs
         # Only generate docs once on ubuntu.

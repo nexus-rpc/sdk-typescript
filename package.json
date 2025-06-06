@@ -2,43 +2,33 @@
   "name": "nexus-rpc",
   "version": "0.0.1",
   "description": "Nexus TypeScript SDK",
+  "license": "MIT",
+  "author": "Temporal Technologies Inc. <sdk@temporal.io>",
   "keywords": [
     "rpc",
     "service",
     "async"
   ],
-  "bugs": {
-    "url": "https://github.com/nexus-rpc/sdk-typescript/issues"
-  },
+  "homepage": "https://github.com/nexus-rpc/sdk-typescript/tree/main",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nexus-rpc/sdk-typescript.git"
   },
-  "homepage": "https://github.com/nexus-rpc/sdk-typescript/tree/main",
-  "license": "MIT",
-  "author": "Temporal Technologies Inc. <sdk@temporal.io>",
+  "bugs": {
+    "url": "https://github.com/nexus-rpc/sdk-typescript/issues"
+  },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "build:docs": "typedoc src --plugin typedoc-github-theme",
     "test": "node lib/test.js",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write .",
-    "build:docs": "typedoc src --plugin typedoc-github-theme"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write ."
   },
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">= 18.0.0"
-  },
-  "files": [
-    "lib",
-    "src",
-    "!**/*test*"
-  ],
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/node": "^18.0.0",
@@ -48,5 +38,16 @@
     "typedoc-github-theme": "^0.2.1",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0"
-  }
+  },
+  "engines": {
+    "node": ">= 18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "lib",
+    "src",
+    "!**/*test*"
+  ]
 }

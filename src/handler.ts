@@ -43,7 +43,7 @@ export interface StartOperationContext extends OperationContext {
 
   /**
    * Links that may be attached by handler implementations to be propagated back to the caller.
-   * 
+   *
    * Handlers should mutate this array directly, e.g. by calling `push` directly.
    */
   handlerLinks: Link[];
@@ -52,7 +52,7 @@ export interface StartOperationContext extends OperationContext {
 /**
  * Context for the {@link OperationHandler["getInfo"]} method.
  */
-export type GetOperationInfoContext = OperationContext
+export type GetOperationInfoContext = OperationContext;
 
 /**
  * Context for the {@link OperationHandler["getResult"]} method.
@@ -68,7 +68,7 @@ export interface GetOperationResultContext extends OperationContext {
 /**
  * Context for the {@link OperationHandler["cancel"]} method.
  */
-export type CancelOperationContext = OperationContext
+export type CancelOperationContext = OperationContext;
 
 /** A result that indicates that an operation completed successfully. */
 export interface HandlerStartOperationResultSync<T> {
@@ -87,7 +87,9 @@ export interface HandlerStartOperationResultAsync {
 /**
  * The return type from the {@link OperationHandler["start"]}. May be synchronous or asynchronous.
  */
-export type HandlerStartOperationResult<T> = HandlerStartOperationResultSync<T> | HandlerStartOperationResultAsync;
+export type HandlerStartOperationResult<T> =
+  | HandlerStartOperationResultSync<T>
+  | HandlerStartOperationResultAsync;
 
 /**
  * A handler for an operation.
@@ -144,12 +146,13 @@ export interface OperationHandler<I, O> {
  */
 export type SyncOperationHandler<I, O> = (ctx: StartOperationContext, input: I) => Promise<O>;
 
-
 /**
  * A type that defines a handler for a given operation.
  */
 export type OperationHandlerFor<T> =
-  T extends Operation<infer I, infer O> ? OperationHandler<I, O> | SyncOperationHandler<I, O> : never;
+  T extends Operation<infer I, infer O>
+    ? OperationHandler<I, O> | SyncOperationHandler<I, O>
+    : never;
 
 /**
  * A type that defines a collection of handlers for a given collection of operation interfaces.
@@ -176,10 +179,14 @@ export function serviceHandler<T extends OperationMap>(
 
   for (const [k, op] of Object.entries(service.operations)) {
     if (!op.name) {
-      throw new TypeError(`Tried to register an operation with no name for service ${service.name} with key ${k}`);
+      throw new TypeError(
+        `Tried to register an operation with no name for service ${service.name} with key ${k}`,
+      );
     }
     if (ops.has(op.name)) {
-      throw new TypeError(`Operation with name ${op.name} already registered for service ${service.name}`);
+      throw new TypeError(
+        `Operation with name ${op.name} already registered for service ${service.name}`,
+      );
     }
     const handler = handlers[k];
     if (!handler) {
@@ -198,7 +205,10 @@ export function serviceHandler<T extends OperationMap>(
  * A collection of service handlers that dispatches requests to the registered service and operation handler.
  */
 export class ServiceRegistry implements OperationHandler<unknown, unknown> {
-  private services = new Map<string, Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>>();
+  private services = new Map<
+    string,
+    Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>
+  >();
 
   constructor(services: ServiceHandler[]) {
     for (const s of services) {
@@ -211,10 +221,14 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
       const ops = new Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>();
       for (const [k, op] of Object.entries(s.operations)) {
         if (!op.name) {
-          throw new TypeError(`Tried to register an operation with no name for service ${s.name} with key ${k}`);
+          throw new TypeError(
+            `Tried to register an operation with no name for service ${s.name} with key ${k}`,
+          );
         }
         if (ops.has(op.name)) {
-          throw new TypeError(`Operation with name ${op.name} already registered for service ${s.name}`);
+          throw new TypeError(
+            `Operation with name ${op.name} already registered for service ${s.name}`,
+          );
         }
         const handler = s.handlers[k];
         if (!handler) {
@@ -226,7 +240,9 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     }
   }
 
-  private getHandler(ctx: OperationContext): OperationHandler<any, any> | SyncOperationHandler<any, any> {
+  private getHandler(
+    ctx: OperationContext,
+  ): OperationHandler<any, any> | SyncOperationHandler<any, any> {
     const { service, operation } = ctx;
     const serviceHandler = this.services.get(service);
     if (serviceHandler == null) {
@@ -258,10 +274,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     return await handler.start(ctx, input);
   }
 
-  async getResult(
-    ctx: GetOperationResultContext,
-    token: string,
-  ): Promise<LazyValue> {
+  async getResult(ctx: GetOperationResultContext, token: string): Promise<LazyValue> {
     const handler = this.getHandler(ctx);
     if (typeof handler === "function") {
       throw new HandlerError({
@@ -272,10 +285,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     return await handler.getResult(ctx, token);
   }
 
-  async getInfo(
-    ctx: GetOperationInfoContext,
-    token: string,
-  ): Promise<OperationInfo> {
+  async getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo> {
     const handler = this.getHandler(ctx);
     if (typeof handler === "function") {
       throw new HandlerError({
