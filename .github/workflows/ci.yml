@@ -19,8 +19,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+
       - run: npm run lint
+        if: matrix.os == 'ubuntu-latest'
+
       - run: npm run format
+        if: matrix.os == 'ubuntu-latest'
 
       - run: npm run build:docs
         # Only generate docs once on ubuntu.
