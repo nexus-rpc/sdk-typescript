@@ -1,10 +1,9 @@
-import { SymbolBasedInstanceOf } from "./helpers";
+import { injectSymbolBasedInstanceOf } from "./helpers";
 
 /**
  * A container for an value encoded in an underlying stream.
  * It is used to stream inputs and outputs in the various client and server APIs.
  */
-@SymbolBasedInstanceOf("LazyValue")
 export class LazyValue {
   constructor(
     readonly serializer: Serializer,
@@ -48,6 +47,8 @@ export class LazyValue {
     return this.serializer.deserialize<T>({ headers: this.headers, data });
   }
 }
+
+injectSymbolBasedInstanceOf(LazyValue, "LazyValue");
 
 /**
  * A container for a map of headers and a byte array of data.
