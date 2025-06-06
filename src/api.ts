@@ -7,9 +7,10 @@ export type OperationState = "succeeded" | "failed" | "canceled" | "running";
  * Information about an operation, the return type of {@link OperationHandler["getInfo"]}.
  */
 export interface OperationInfo {
-  // Token for the operation.
+  /** Token for the operation. */
   token: string;
-  // State of the operation.
+
+  /** State of the operation. */
   state: OperationState;
 }
 
@@ -59,8 +60,10 @@ export type HandlerErrorType =
 export interface HandlerErrorMessageOptions {
   /** Error message. */
   message: string;
+
   /** One of the predefined error types. */
   type: HandlerErrorType;
+
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
    * type. For example, INTERNAL is retryable by default unless specified otherwise.
@@ -74,6 +77,7 @@ export interface HandlerErrorMessageOptions {
 export interface HandlerErrorCauseOptions extends ErrorOptions {
   /** One of the predefined error types. */
   type: HandlerErrorType;
+
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
    * type. For example, INTERNAL is retryable by default unless specified otherwise.
@@ -93,6 +97,7 @@ export type HandlerErrorOptions = HandlerErrorMessageOptions | HandlerErrorCause
 export class HandlerError extends Error {
   /** One of the predefined error types. */
   public readonly type: HandlerErrorType;
+
   /**
    * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
    * type. For example, INTERNAL is retryable by default unless specified otherwise.
@@ -112,7 +117,10 @@ injectSymbolBasedInstanceOf(HandlerError, "HandlerError");
  * Options for constructing an {@link OperationError} from a message and operation state.
  */
 export interface OperationErrorMessageOptions {
+  /** Error message. */
   message: string;
+
+  /** State of the operation. */
   state: "canceled" | "failed";
 }
 
@@ -120,6 +128,7 @@ export interface OperationErrorMessageOptions {
  * Options for constructing an {@link OperationError} from an underlying cause and operation state.
  */
 export interface OperationErrorCauseOptions extends ErrorOptions {
+  /** State of the operation. */
   state: "canceled" | "failed";
 }
 
@@ -150,6 +159,7 @@ injectSymbolBasedInstanceOf(OperationError, "OperationError");
 export interface Link {
   /** An arbitrary percent-encoded URL. */
   url: URL;
+
   /**
    * Type information for decoding the URL.
    *

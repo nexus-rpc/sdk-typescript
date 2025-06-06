@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    // es2022 is required for Error.cause, DOM is required for ReadableStream.
+    // es2022 is required for Error.cause, WebWorker is required for ReadableStream.
     // Both supported in Node 18+.
-    "lib": ["es2022", "DOM"],
+    "lib": ["es2022", "WebWorker"],
     "target": "es2022",
     "module": "commonjs",
     "esModuleInterop": true,

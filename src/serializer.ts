@@ -1,12 +1,13 @@
 import { injectSymbolBasedInstanceOf } from "./helpers";
 
 /**
- * A container for an value encoded in an underlying stream.
+ * A container for a value encoded in an underlying stream.
  * It is used to stream inputs and outputs in the various client and server APIs.
  */
 export class LazyValue {
   constructor(
     readonly serializer: Serializer,
+
     /**
      * Headers that should include information on how to process the stream's content.
      * Headers constructed by the framework always have lower case keys.
@@ -73,6 +74,7 @@ export interface Content {
 export interface Serializer {
   /** Serialize encodes a value into a {@link Content}. */
   serialize(value: unknown): Content;
+
   /** Deserialize decodes a {@link Content} into a value. */
   deserialize<T = unknown>(content: Content): T;
 }
