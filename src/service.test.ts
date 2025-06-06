@@ -103,8 +103,8 @@ describe("ServiceRegistry", () => {
     operation,
     abortSignal: new AbortController().signal,
     headers: {},
-    callerLinks: [{ type: "test", url: new URL("http://test") }],
-    handlerLinks: [],
+    inboundLinks: [{ type: "test", url: new URL("http://test") }],
+    outboundLinks: [],
     requestId: "test-req-id",
   });
 
@@ -170,7 +170,7 @@ describe("ServiceRegistry", () => {
       operation: "syncOp",
       abortSignal: new AbortController().signal,
       headers: {},
-      wait: 0,
+      timeoutMs: 0,
     };
     assert.rejects(() => registry.getResult(ctx, "token"), /HandlerError: Not implemented/);
     ctx.operation = "custom name";
