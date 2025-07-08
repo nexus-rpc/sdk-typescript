@@ -14,11 +14,11 @@ export default tseslint.config(
         {
           argsIgnorePattern: "^_",
           caughtErrorsIgnorePattern: "^_",
-          varsIgnorePattern: "^_"
-        }
+          varsIgnorePattern: "^_",
+        },
       ],
       // We need to allow the use of any for type inference.
-      "@typescript-eslint/no-explicit-any": "off"
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );

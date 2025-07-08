@@ -24,7 +24,9 @@ export type PartialOperationMap = Record<string, PartialOperation<any, any>>;
  * A type that transforms a {@link PartialOperationMap} into an {@link OperationMap}.
  */
 export type OperationMapFromPartial<T extends PartialOperationMap> = {
-  [K in keyof T & string]: T[K] extends PartialOperation<infer I, infer O> ? Operation<I, O> : never;
+  [K in keyof T & string]: T[K] extends PartialOperation<infer I, infer O>
+    ? Operation<I, O>
+    : never;
 };
 
 /**

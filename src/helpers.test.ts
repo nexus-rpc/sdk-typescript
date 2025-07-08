@@ -1,7 +1,6 @@
 import { test, it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import vm from "vm";
-
 import { injectSymbolBasedInstanceOf } from "./helpers";
 
 describe("injectSymbolBasedInstanceOf", () => {
