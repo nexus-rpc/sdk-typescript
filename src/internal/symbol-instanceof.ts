@@ -1,8 +1,3 @@
-export interface Class<E> {
-  new (...args: any[]): E;
-  prototype: E;
-}
-
 /**
  * Inject a custom 'instanceof' handler on the given class, that works correctly across execution contexts.
  *
@@ -25,6 +20,8 @@ export interface Class<E> {
  * This function injects a custom 'instanceof' handler into the prototype of 'clazz', which is both cross-realm safe and
  * cross-copies-of-the-same-lib safe. It works by adding a special symbol property to the prototype of 'clazz', and then
  * checking for the presence of that symbol.
+ *
+ * @internal
  */
 export function injectSymbolBasedInstanceOf<E>(clazz: Class<E>, markerName: string): void {
   // It may seem redundant to have an explicit markerName argument here. Can't we simply use the class
@@ -49,4 +46,14 @@ export function injectSymbolBasedInstanceOf<E>(clazz: Class<E>, markerName: stri
       }
     },
   });
+}
+
+/**
+ * Type definition for a class.
+ *
+ * @internal
+ */
+export interface Class<E> {
+  new (...args: any[]): E;
+  prototype: E;
 }

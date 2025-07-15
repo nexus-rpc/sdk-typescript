@@ -1,4 +1,4 @@
-import { injectSymbolBasedInstanceOf } from "./helpers";
+import { injectSymbolBasedInstanceOf } from "./internal/symbol-instanceof";
 
 /** A representation of the variable states of an operation. */
 export type OperationState = "succeeded" | "failed" | "canceled" | "running";
