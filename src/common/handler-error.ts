@@ -101,10 +101,12 @@ export interface HandlerErrorOptions {
   type: HandlerErrorType;
 
   /**
-   * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
-   * type. For example, INTERNAL is retryable by default unless specified otherwise.
+   * Whether this error should be considered retryable.
+   *
+   * If not set, the retry behavior is determined from the error type.
+   * For example, `INTERNAL` is retryable by default, but `UNAVAILABLE` is not.
    */
-  retryable?: boolean;
+  retryableOverride?: boolean | undefined;
 }
 
 /**
@@ -128,7 +130,7 @@ export interface HandlerErrorOptions {
  *     throw new HandlerError({
  *         type: "INTERNAL",
  *         message: "Database unavailable",
- *         retryable: true,
+ *         retryableOverride: true,
  *     })
  * ```
  *
@@ -140,13 +142,24 @@ export class HandlerError extends Error {
    *
    * @see {@link HandlerErrorType}
    */
+  // XXX: Java uses a closed enum, but maps unknown values to a special `UNKNOWN` enum value.
+  // XXX: Go makes it a string, but docs says only values from some set are "valid" (but no check).
+  // XXX: Python defines a closed string enum, but doens't check for valid values, so really just a string at runtime.
+  // XXX: We do same as Python here.
   public readonly type: HandlerErrorType;
 
   /**
-   * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
-   * type. For example, INTERNAL is retryable by default unless specified otherwise.
+   * Whether this error should be considered retryable.
+   *
+   * By default, the retry behavior is determined from the error type.
+   * For example, `INTERNAL` is retryable by default, but `UNAVAILABLE` is not.
+   *
+   * If specified, `retryableOverride` overrides the default retry behavior determined based on
+   * the error type. Use {@link retryable} to determine the effective retry behavior.
+   *
+   * @see {@link retryable}.
    */
-  public readonly retryable?: boolean;
+  public readonly retryableOverride: boolean | undefined;
 
   /**
    * Constructs a new {@link HandlerError}.
@@ -164,7 +177,40 @@ export class HandlerError extends Error {
 
     super(message, { cause: options.cause });
     this.type = options.type;
-    this.retryable = options?.retryable;
+    this.retryableOverride = options.retryableOverride;
+  }
+
+  /**
+   * Whether this error should _effectively_ be considered retryable.
+   *
+   * This differs from the {@link retryableOverride} property in that `retryable`
+   * takes into account the default behavior resulting from the error type.
+   *
+   * @see {@link retryableOverride}.
+   */
+  public get retryable(): boolean {
+    if (typeof this.retryableOverride === "boolean") return this.retryableOverride;
+
+    switch (this.type) {
+      case "BAD_REQUEST":
+      case "UNAUTHENTICATED":
+      case "UNAUTHORIZED":
+      case "NOT_FOUND":
+      case "NOT_IMPLEMENTED":
+        return false;
+
+      case "UNAVAILABLE":
+      case "UPSTREAM_TIMEOUT":
+      case "RESOURCE_EXHAUSTED":
+      case "INTERNAL":
+        return true;
+
+      default: {
+        // Force a compile time error if missing a case
+        const _noMissingCase: never = this.type;
+        return true;
+      }
+    }
   }
 }
 

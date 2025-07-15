@@ -13,17 +13,19 @@ describe("HandlerError", () => {
     assert.equal(error.type, "BAD_REQUEST");
     assert.equal(error.message, "Invalid input provided");
     assert.equal(error.cause, undefined);
+    assert.equal(error.retryableOverride, undefined);
     assert.equal(error.retryable, false);
 
     error = new HandlerError({
       type: "INTERNAL",
       message: "Database unavailable",
-      retryable: true,
+      retryableOverride: true,
     });
 
     assert.equal(error.type, "INTERNAL");
     assert.equal(error.message, "Database unavailable");
     assert.equal(error.cause, undefined);
+    assert.equal(error.retryableOverride, true);
     assert.equal(error.retryable, true);
   });
 
@@ -53,5 +55,31 @@ describe("HandlerError", () => {
     });
     assert.equal(error.message, "Error message: Cause message");
     assert.equal((error.cause as Error).message, "Cause message");
+  });
+
+  it("Correctly compute retry behavior", () => {
+    const retryableType = "UNAVAILABLE";
+    const nonRetryableType = "BAD_REQUEST";
+
+    let error = new HandlerError({ message: "x", type: retryableType });
+    assert.equal(error.retryableOverride, undefined);
+    assert.equal(error.retryable, true);
+
+    error = new HandlerError({ message: "x", type: nonRetryableType });
+    assert.equal(error.retryableOverride, undefined);
+    assert.equal(error.retryable, false);
+
+    error = new HandlerError({ message: "x", type: retryableType, retryableOverride: false });
+    assert.equal(error.retryableOverride, false);
+    assert.equal(error.retryable, false);
+
+    error = new HandlerError({ message: "x", type: nonRetryableType, retryableOverride: true });
+    assert.equal(error.retryableOverride, true);
+    assert.equal(error.retryable, true);
+
+    // Default to retryable if given an invalid error type. This is in line with all reference SDKs.
+    error = new HandlerError({ message: "x", type: "INVALID" as any });
+    assert.equal(error.retryableOverride, undefined);
+    assert.equal(error.retryable, true);
   });
 });
