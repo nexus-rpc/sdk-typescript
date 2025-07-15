@@ -1,3 +1,4 @@
+import { type RequireAtLeastOneOf } from "../internal/types";
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
 
 /**
@@ -50,7 +51,7 @@ export const HandlerErrorType = {
 
   /**
    * The server either does not recognize the request method, or it lacks the ability to fulfill the
- * request. Clients should not retry this request unless advised otherwise.
+   * request. Clients should not retry this request unless advised otherwise.
    */
   NOT_IMPLEMENTED: "NOT_IMPLEMENTED",
 
@@ -65,18 +66,38 @@ export const HandlerErrorType = {
    * Used by gateways to report that a request to an upstream server has timed out.
    *
    * Subsequent requests by the client are permissible.
- */
+   */
   UPSTREAM_TIMEOUT: "UPSTREAM_TIMEOUT",
 } as const;
 
 /**
- * Options for constructing a {@link HandlerError} from a message, type, and a retryable flag.
+ * Options for constructing a {@link HandlerError}.
+ *
+ * @experimental
+ * @inline
  */
-export interface HandlerErrorMessageOptions {
-  /** Error message. */
-  message: string;
+export interface HandlerErrorOptions {
+  /**
+   * A descriptive error message for the error.
+   *
+   * This will become the `message` in the resulting Nexus Failure object.
+   *
+   * Either this or {@link cause} must be provided.
+   */
+  message?: string;
 
-  /** One of the predefined error types. */
+  /**
+   * Underlying cause of the error.
+   *
+   * Either this or {@link message} must be provided.
+   */
+  cause?: unknown;
+
+  /**
+   * One of the predefined error types.
+   *
+   * This is required.
+   */
   type: HandlerErrorType;
 
   /**
@@ -87,30 +108,38 @@ export interface HandlerErrorMessageOptions {
 }
 
 /**
- * Options for constructing a {@link HandlerError} from an underlying cause, type, and a retryable flag.
- */
-export interface HandlerErrorCauseOptions extends ErrorOptions {
-  /** One of the predefined error types. */
-  type: HandlerErrorType;
-
-  /**
-   * Whether this error should be considered retryable. If not specified, retry behavior is determined from the error
-   * type. For example, INTERNAL is retryable by default unless specified otherwise.
-   */
-  retryable?: boolean;
-}
-
-/**
- * Options for constructing a {@link HandlerError} from either a message or an underlying cause.
- */
-export type HandlerErrorOptions = HandlerErrorMessageOptions | HandlerErrorCauseOptions;
-
-/**
- * A special error that can be returned from {@link OperationHandler} methods for failing a request with a custom status
- * code and failure message.
+ * A Nexus handler error.
+ *
+ * This error class is used to represent errors that occur during the handling of a
+ * Nexus operation that should be reported to the caller as a handler error.
+ *
+ * Example:
+ *
+ * ```ts
+ *     import { HandlerError } from "@nexus-rpc/sdk-typescript";
+ *
+ *     // Throw a bad request error
+ *     throw new HandlerError({
+ *         type: "BAD_REQUEST",
+ *         message: "Invalid input provided",
+ *     })
+ *
+ *     // Throw a retryable internal error
+ *     throw new HandlerError({
+ *         type: "INTERNAL",
+ *         message: "Database unavailable",
+ *         retryable: true,
+ *     })
+ * ```
+ *
+ * @experimental
  */
 export class HandlerError extends Error {
-  /** One of the predefined error types. */
+  /**
+   * One of the predefined error types.
+   *
+   * @see {@link HandlerErrorType}
+   */
   public readonly type: HandlerErrorType;
 
   /**
@@ -119,8 +148,21 @@ export class HandlerError extends Error {
    */
   public readonly retryable?: boolean;
 
-  constructor(options: HandlerErrorOptions) {
-    super((options as any).message, options as any as ErrorOptions);
+  /**
+   * Constructs a new {@link HandlerError}.
+   *
+   * @param options - The options for the error.
+   */
+  constructor(options: RequireAtLeastOneOf<HandlerErrorOptions, "message" | "cause">) {
+    // FIXME: Waiting for confirmation on whether to allow both message and cause, or make them mutually exclusive,
+    //        and either message-only should be transformed into a cause.
+    const causeMessage = (options.cause as Error)?.message;
+    const message =
+      options.message && causeMessage
+        ? `${options.message}: ${causeMessage}`
+        : options.message || causeMessage || "Handler error";
+
+    super(message, { cause: options.cause });
     this.type = options.type;
     this.retryable = options?.retryable;
   }
