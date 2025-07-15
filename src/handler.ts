@@ -1,4 +1,4 @@
-import { HandlerError, Link, OperationInfo } from "./api";
+import { HandlerError, Link, OperationInfo } from "./common";
 import { Operation, OperationMap, Service } from "./operation";
 import { LazyValue } from "./serializer";
 
