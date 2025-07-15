@@ -1,4 +1,4 @@
-import { injectSymbolBasedInstanceOf } from "./helpers";
+import { injectSymbolBasedInstanceOf } from "./internal/symbol-instanceof";
 
 /**
  * A container for a value encoded in an underlying stream.

@@ -1,7 +1,7 @@
 import { test, it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import vm from "vm";
-import { injectSymbolBasedInstanceOf } from "./helpers";
+import { injectSymbolBasedInstanceOf } from "./symbol-instanceof";
 
 describe("injectSymbolBasedInstanceOf", () => {
   const script = new vm.Script(`
@@ -25,8 +25,11 @@ describe("injectSymbolBasedInstanceOf", () => {
     };
   }
 
-  // This test is trivial and obvious. It is only meant to clearly establish a baseline for other tests.
-  it("BASELINE - instanceof works as expected in single realm, without injectSymbolBasedInstanceOf", () => {
+  /**
+   * This test is trivial and obvious.
+   * It is only meant to clearly establish a baseline for other tests.
+   */
+  it("instanceof works as expected in single realm, without injectSymbolBasedInstanceOf", () => {
     const { cx1 } = makeContext();
 
     assert.ok(cx1("new ClassA()") instanceof cx1("ClassA"));
@@ -46,8 +49,10 @@ describe("injectSymbolBasedInstanceOf", () => {
     assert.ok(cx1("new ClassC()") instanceof cx1("Object"));
   });
 
-  // This test demonstrates that cross-realm instanceof is indeed broken by default.
-  test("BASELINE - instanceof is broken in cross realms, without injectSymbolBasedInstanceOf", () => {
+  /**
+   * This test demonstrates that cross-realm instanceof is indeed broken by default.
+   */
+  test("instanceof is broken in cross realms, without injectSymbolBasedInstanceOf", () => {
     const { cx1, cx2 } = makeContext();
 
     assert.ok(!(cx1("new ClassA()") instanceof cx2("ClassA")));
@@ -67,6 +72,10 @@ describe("injectSymbolBasedInstanceOf", () => {
     assert.ok(!(cx1("new ClassC()") instanceof cx2("Object")));
   });
 
+  /**
+   * This test demonstrates that injectSymbolBasedInstanceOf doesn't break any
+   * default behaviour of instanceof in single realm.
+   */
   test(`injectSymbolBasedInstanceOf doesn't break any default behaviour of instanceof in single realm`, () => {
     const { cx1 } = makeContext();
 
@@ -90,6 +99,10 @@ describe("injectSymbolBasedInstanceOf", () => {
     assert.ok(cx1("new ClassC()") instanceof cx1("Object"));
   });
 
+  /**
+   * This test demonstrates that injectSymbolBasedInstanceOf fixes incorrect
+   * instanceof default behavior in cross-realm scenarios.
+   */
   test(`instanceof is working as expected across realms with injectSymbolBasedInstanceOf`, () => {
     const { cx1, cx2 } = makeContext();
 
@@ -121,6 +134,10 @@ describe("injectSymbolBasedInstanceOf", () => {
     assert.ok(!(cx1("new ClassC()") instanceof cx2("Object")));
   });
 
+  /**
+   * This test confirms that injectSymbolBasedInstanceOf doesn't break in
+   * situations where the subject of instanceof is not an object.
+   */
   test("injectSymbolBasedInstanceOf doesnt break on non-object values", () => {
     const { cx1 } = makeContext();
 

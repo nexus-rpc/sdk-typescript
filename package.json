@@ -23,22 +23,22 @@
     "prepare": "npm run build",
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
-    "build:docs": "typedoc src --plugin typedoc-github-theme",
-    "test": "node lib/test.js",
+    "build:docs": "typedoc src/index.doc.ts --plugin typedoc-github-theme",
+    "test": "node lib/index.test.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --check .",
     "format:fix": "prettier --write ."
   },
   "devDependencies": {
-    "@eslint/js": "^9.21.0",
+    "@eslint/js": "^9.31.0",
     "@types/node": "^18.0.0",
-    "eslint": "^9.21.0",
-    "prettier": "^3.5.3",
-    "typedoc": "^0.27.9",
-    "typedoc-github-theme": "^0.2.1",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.0"
+    "eslint": "^9.31.0",
+    "prettier": "^3.6.2",
+    "typedoc": "^0.28.7",
+    "typedoc-github-theme": "^0.3.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.37.0"
   },
   "engines": {
     "node": ">= 18.0.0"
