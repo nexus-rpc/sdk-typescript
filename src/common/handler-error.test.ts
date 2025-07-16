@@ -3,8 +3,8 @@ import * as assert from "node:assert/strict";
 import { HandlerError } from "./index";
 
 describe("HandlerError", () => {
-  // Important: Keep these in sync with the sample code on the HandlerError class typedoc.
   it("Can be constructed using sample code", () => {
+    // Important: Keep these in sync with the sample code on the HandlerError class typedoc.
     {
       const error = new HandlerError("BAD_REQUEST", "Invalid input provided");
 
@@ -20,8 +20,8 @@ describe("HandlerError", () => {
       const error = new HandlerError("BAD_REQUEST", "Invalid input provided", { cause });
 
       assert.equal(error.type, "BAD_REQUEST");
-      assert.equal(error.message, "Invalid input provided: Cause message");
-      assert.deepEqual(error.cause, cause);
+      assert.equal(error.message, "Invalid input provided");
+      assert.deepEqual(error.cause, new Error("Cause message"));
       assert.equal(error.retryableOverride, undefined);
       assert.equal(error.retryable, false);
     }
@@ -40,48 +40,77 @@ describe("HandlerError", () => {
   });
 
   it("Properly handles all combinations of message and cause", () => {
-    // Use a default message if neither `message` nor `cause` is provided.
-    let error = new HandlerError("UNAVAILABLE");
-    assert.equal(error.message, "Handler error");
+    {
+      // Use a default message if neither `message` nor `cause` is provided.
+      const error = new HandlerError("UNAVAILABLE");
 
-    // Accept only `message`
-    error = new HandlerError("UNAVAILABLE", "Error message");
-    assert.equal(error.message, "Error message");
+      assert.equal(error.message, "Handler error: UNAVAILABLE");
+    }
 
-    // Accept only `cause`
-    error = new HandlerError("UNAVAILABLE", undefined, { cause: new Error("Cause message") });
-    assert.equal(error.message, "Cause message");
-    assert.equal((error.cause as Error).message, "Cause message");
+    {
+      // Accept only `message`
+      const error = new HandlerError("UNAVAILABLE", "Error message");
 
-    // Accept both `message` and `cause`, composing the HandlerError message from both.
-    error = new HandlerError("UNAVAILABLE", "Error message", { cause: new Error("Cause message") });
-    assert.equal(error.message, "Error message: Cause message");
-    assert.equal((error.cause as Error).message, "Cause message");
+      assert.equal(error.message, "Error message");
+    }
+
+    {
+      // Accept only `cause`
+      const cause = new Error("Cause message");
+      const error = new HandlerError("UNAVAILABLE", undefined, { cause });
+
+      assert.equal(error.message, "Handler error: UNAVAILABLE");
+      assert.deepEqual(error.cause, new Error("Cause message"));
+    }
+
+    {
+      // Accept both `message` and `cause`.
+      const cause = new Error("Cause message");
+      const error = new HandlerError("UNAVAILABLE", "Error message", { cause });
+
+      assert.equal(error.message, "Error message");
+      assert.deepEqual(error.cause, new Error("Cause message"));
+    }
   });
 
   it("Correctly compute retry behavior", () => {
     const retryableType = "UNAVAILABLE";
     const nonRetryableType = "BAD_REQUEST";
 
-    let error = new HandlerError(retryableType, "x");
-    assert.equal(error.retryableOverride, undefined);
-    assert.equal(error.retryable, true);
+    {
+      const error = new HandlerError(retryableType, "x");
 
-    error = new HandlerError(nonRetryableType, "x");
-    assert.equal(error.retryableOverride, undefined);
-    assert.equal(error.retryable, false);
+      assert.equal(error.retryableOverride, undefined);
+      assert.equal(error.retryable, true);
+    }
 
-    error = new HandlerError(retryableType, "x", { retryableOverride: false });
-    assert.equal(error.retryableOverride, false);
-    assert.equal(error.retryable, false);
+    {
+      const error = new HandlerError(nonRetryableType, "x");
 
-    error = new HandlerError(nonRetryableType, "x", { retryableOverride: true });
-    assert.equal(error.retryableOverride, true);
-    assert.equal(error.retryable, true);
+      assert.equal(error.retryableOverride, undefined);
+      assert.equal(error.retryable, false);
+    }
 
-    // Default to retryable if given an invalid error type. This is in line with all reference SDKs.
-    error = new HandlerError("INVALID" as any, "x");
-    assert.equal(error.retryableOverride, undefined);
-    assert.equal(error.retryable, true);
+    {
+      const error = new HandlerError(retryableType, "x", { retryableOverride: false });
+
+      assert.equal(error.retryableOverride, false);
+      assert.equal(error.retryable, false);
+    }
+
+    {
+      const error = new HandlerError(nonRetryableType, "x", { retryableOverride: true });
+
+      assert.equal(error.retryableOverride, true);
+      assert.equal(error.retryable, true);
+    }
+
+    {
+      // Defaults to retryable if given an invalid error type. This is in line with all reference SDKs.
+      const error = new HandlerError("INVALID" as any, "x");
+
+      assert.equal(error.retryableOverride, undefined);
+      assert.equal(error.retryable, true);
+    }
   });
 });
