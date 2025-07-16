@@ -1,6 +1,77 @@
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
 
 /**
+ * A Nexus operation error.
+ *
+ * This error class represents the abnormal completion of a Nexus operation,
+ * that should be reported to the caller as an operation error.
+ *
+ * Example:
+ *
+ * ```ts
+ *     import { OperationError } from "@nexus-rpc/sdk-typescript";
+ *
+ *     // Throw a failed operation error
+ *     throw new OperationError("failed", "Not enough inventory");
+ *
+ *     // Throw a failed operation error, with a cause
+ *     throw new OperationError("failed", "Not enough inventory", { cause });
+ *
+ *     // Throw a canceled operation error
+ *     throw new OperationError("canceled", "User canceled the operation");
+ * ```
+ *
+ * @experimental
+ */
+export class OperationError extends Error {
+  /**
+   * State of the operation.
+   */
+  public readonly state: OperationErrorState;
+
+  /**
+   * The error that resulted in this operation error.
+   */
+  declare public readonly cause: Error;
+
+  constructor(
+    state: OperationErrorState,
+    message?: string | undefined,
+    options?: OperationErrorOptions,
+  ) {
+    const defaultMessage = state === "canceled" ? `Operation canceled` : `Operation failed`;
+    const actualMessage = message || defaultMessage;
+
+    super(actualMessage, { cause: options?.cause });
+    this.state = state;
+  }
+
+  /**
+   * Create a new {@link OperationError} representing a failed operation.
+   *
+   * This is a convenience method to create an {@link OperationError} for a failed operation.
+   *
+   * @experimental
+   */
+  public static failed(cause: Error): OperationError {
+    return new OperationError("failed", undefined, { cause });
+  }
+
+  /**
+   * Create a new {@link OperationError} representing a canceled operation.
+   *
+   * This is a convenience method to create an {@link OperationError} for a canceled operation.
+   *
+   * @experimental
+   */
+  public static canceled(cause: Error): OperationError {
+    return new OperationError("canceled", undefined, { cause });
+  }
+}
+
+injectSymbolBasedInstanceOf(OperationError, "OperationError");
+
+/**
  * Options for constructing an {@link OperationError}.
  *
  * @experimental
@@ -8,93 +79,16 @@ import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
  */
 export interface OperationErrorOptions {
   /**
-   * State of the operation.
-   */
-  state: "canceled" | "failed";
-
-  /**
    * Underlying cause of the error.
    */
   cause: Error;
 }
 
 /**
- * An error that represents "failed" and "canceled" operation results.
+ * Describes state of an operation that did not complete successfully.
+ *
+ * This is a subset of {@link OperationState}.
  *
  * @experimental
  */
-// XXX: Go: OperationError (nexus/api.go)
-// XXX: Java: OperationException (java.io.nexusrpc.OperationException)
-// XXX: Python: OperationError (nexusrpc/_common.py)
-// XXX: Note the absence of `message`. This is in line with all reference SDKs.
-// XXX: Python has one, which is incorrect. We may change this across the board in the future, but not now.
-export class OperationError extends Error {
-  /**
-   * State of the operation.
-   */
-  public readonly state: "canceled" | "failed";
-
-  /**
-   * The error that resulted in this operation error.
-   */
-  declare public readonly cause: Error;
-
-  constructor(options: OperationErrorOptions) {
-    if (options.state !== "canceled" && options.state !== "failed") {
-      throw new TypeError(
-        `OperationError's state is required and must be either 'canceled' or 'failed'; got: '${options.state}'`,
-      );
-    }
-
-    if (typeof options.cause !== "object" || options.cause === null) {
-      throw new TypeError(
-        `OperationError's cause is required and must be an object; got: '${options.cause}'`,
-      );
-    }
-
-    // According to the spec, OperationError really doesn't have a message of its own,
-    // but we make one, because it is generally expected in JS that Error.message is set.
-    const message = options.state === "failed" ? `Operation failed` : `Operation canceled`;
-
-    super(message, { cause: options.cause });
-    this.state = options.state;
-  }
-
-  /**
-   * Create a new {@link OperationError} representing a failed operation.
-   *
-   * This is a convenience method. It is equivalent to:
-   *
-   * ```ts
-   * new OperationError({ state: "failed", cause });
-   * ```
-   *
-   * @experimental
-   */
-  public static failure(cause: Error): OperationError {
-    return new OperationError({
-      state: "failed",
-      cause,
-    });
-  }
-
-  /**
-   * Create a new {@link OperationError} representing a canceled operation.
-   *
-   * This is a convenience method. It is equivalent to:
-   *
-   * ```ts
-   * new OperationError({ state: "canceled", cause });
-   * ```
-   *
-   * @experimental
-   */
-  public static canceled(cause: Error): OperationError {
-    return new OperationError({
-      state: "canceled",
-      cause,
-    });
-  }
-}
-
-injectSymbolBasedInstanceOf(OperationError, "OperationError");
+export type OperationErrorState = "failed" | "canceled";
