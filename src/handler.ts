@@ -254,17 +254,14 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     const { service, operation } = ctx;
     const serviceHandler = this.services.get(service);
     if (serviceHandler == null) {
-      throw new HandlerError({
-        type: "NOT_FOUND",
-        message: `Service handler not registered for service ${service}`,
-      });
+      throw new HandlerError("NOT_FOUND", `Service handler not registered for service ${service}`);
     }
     const operationHandler = serviceHandler.get(operation);
     if (operationHandler == null) {
-      throw new HandlerError({
-        type: "NOT_FOUND",
-        message: `Operation handler not registered for operation ${operation} in service ${service}`,
-      });
+      throw new HandlerError(
+        "NOT_FOUND",
+        `Operation handler not registered for operation ${operation} in service ${service}`,
+      );
     }
     return operationHandler;
   }
@@ -285,10 +282,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   async getResult(ctx: GetOperationResultContext, token: string): Promise<LazyValue> {
     const handler = this.getOperationHandler(ctx);
     if (typeof handler === "function") {
-      throw new HandlerError({
-        type: "NOT_IMPLEMENTED",
-        message: "Not implemented",
-      });
+      throw new HandlerError("NOT_IMPLEMENTED", "Not implemented");
     }
     return await handler.getResult(ctx, token);
   }
@@ -296,10 +290,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   async getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo> {
     const handler = this.getOperationHandler(ctx);
     if (typeof handler === "function") {
-      throw new HandlerError({
-        type: "NOT_IMPLEMENTED",
-        message: "Not implemented",
-      });
+      throw new HandlerError("NOT_IMPLEMENTED", "Not implemented");
     }
     return await handler.getInfo(ctx, token);
   }
@@ -307,10 +298,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   async cancel(ctx: CancelOperationContext, token: string): Promise<void> {
     const handler = this.getOperationHandler(ctx);
     if (typeof handler === "function") {
-      throw new HandlerError({
-        type: "NOT_IMPLEMENTED",
-        message: "Not implemented",
-      });
+      throw new HandlerError("NOT_IMPLEMENTED", "Not implemented");
     }
     return await handler.cancel(ctx, token);
   }

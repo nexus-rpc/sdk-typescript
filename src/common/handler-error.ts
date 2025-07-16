@@ -1,4 +1,3 @@
-import { type RequireAtLeastOneOf } from "../internal/types";
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
 
 /**
@@ -78,33 +77,15 @@ export const HandlerErrorType = {
  */
 export interface HandlerErrorOptions {
   /**
-   * A descriptive error message for the error.
-   *
-   * This will become the `message` in the resulting Nexus Failure object.
-   *
-   * Either this or {@link cause} must be provided.
-   */
-  message?: string;
-
-  /**
    * Underlying cause of the error.
-   *
-   * Either this or {@link message} must be provided.
    */
   cause?: unknown;
-
-  /**
-   * One of the predefined error types.
-   *
-   * This is required.
-   */
-  type: HandlerErrorType;
 
   /**
    * Whether this error should be considered retryable.
    *
    * If not set, the retry behavior is determined from the error type.
-   * For example, `INTERNAL` is retryable by default, but `UNAVAILABLE` is not.
+   * For example, by default, `INTERNAL` is retryable, but `UNAVAILABLE` is non-retryable.
    */
   retryableOverride?: boolean | undefined;
 }
@@ -121,17 +102,13 @@ export interface HandlerErrorOptions {
  *     import { HandlerError } from "@nexus-rpc/sdk-typescript";
  *
  *     // Throw a bad request error
- *     throw new HandlerError({
- *         type: "BAD_REQUEST",
- *         message: "Invalid input provided",
- *     })
+ *     throw new HandlerError("BAD_REQUEST", "Invalid input provided");
+ *
+ *     // Throw a bad request error, with a cause
+ *     throw new HandlerError("BAD_REQUEST", "Invalid input provided", { cause });
  *
  *     // Throw a retryable internal error
- *     throw new HandlerError({
- *         type: "INTERNAL",
- *         message: "Database unavailable",
- *         retryableOverride: true,
- *     })
+ *     throw new HandlerError("INTERNAL", "Database unavailable", { retryableOverride: true });
  * ```
  *
  * @experimental
@@ -152,7 +129,7 @@ export class HandlerError extends Error {
    * Whether this error should be considered retryable.
    *
    * By default, the retry behavior is determined from the error type.
-   * For example, `INTERNAL` is retryable by default, but `UNAVAILABLE` is not.
+   * For example, by default, `INTERNAL` is retryable, but `UNAVAILABLE` is non-retryable.
    *
    * If specified, `retryableOverride` overrides the default retry behavior determined based on
    * the error type. Use {@link retryable} to determine the effective retry behavior.
@@ -164,27 +141,42 @@ export class HandlerError extends Error {
   /**
    * Constructs a new {@link HandlerError}.
    *
-   * @param options - The options for the error.
+   * @param type - The type of the error.
+   * @param message - The message of the error.
+   * @param options - Extra options for the error, including the cause and retryable override.
+   *
+   * @experimental
    */
-  constructor(options: RequireAtLeastOneOf<HandlerErrorOptions, "message" | "cause">) {
-    // FIXME: Waiting for confirmation on whether to allow both message and cause, or make them mutually exclusive,
-    //        and either message-only should be transformed into a cause.
-    const causeMessage = (options.cause as Error)?.message;
-    const message =
-      options.message && causeMessage
-        ? `${options.message}: ${causeMessage}`
-        : options.message || causeMessage || "Handler error";
+  constructor(type: HandlerErrorType, message?: string | undefined, options?: HandlerErrorOptions) {
+    const causeMessage = (options?.cause as Error)?.message;
+    const actualMessage =
+      message && causeMessage
+        ? `${message}: ${causeMessage}`
+        : message || causeMessage || "Handler error";
 
-    super(message, { cause: options.cause });
-    this.type = options.type;
-    this.retryableOverride = options.retryableOverride;
+    super(actualMessage, { cause: options?.cause });
+    this.type = type;
+    this.retryableOverride = options?.retryableOverride;
   }
 
   /**
-   * Whether this error should _effectively_ be considered retryable.
+   * Wraps an error in a {@link HandlerError}.
    *
-   * This differs from the {@link retryableOverride} property in that `retryable`
-   * takes into account the default behavior resulting from the error type.
+   * This is a convenience method to wrap an existing error into a {@link HandlerError}.
+   *
+   * @param type - The type of the error.
+   * @param cause - The cause of the error.
+   * @returns A new {@link HandlerError} instance wrapping the error.
+   */
+  public static wrap(type: HandlerErrorType, cause: unknown): HandlerError {
+    return new HandlerError(type, undefined, { cause });
+  }
+
+  /**
+   * Whether this error is retryable.
+   *
+   * This differs from the {@link retryableOverride} property in that `retryable` takes into
+   * account the default behavior resulting from the error type, if no override is provided.
    *
    * @see {@link retryableOverride}.
    */
