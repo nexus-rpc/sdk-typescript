@@ -119,10 +119,6 @@ export class HandlerError extends Error {
    *
    * @see {@link HandlerErrorType}
    */
-  // XXX: Java uses a closed enum, but maps unknown values to a special `UNKNOWN` enum value.
-  // XXX: Go makes it a string, but docs says only values from some set are "valid" (but no check).
-  // XXX: Python defines a closed string enum, but doens't check for valid values, so really just a string at runtime.
-  // XXX: We do same as Python here.
   public readonly type: HandlerErrorType;
 
   /**

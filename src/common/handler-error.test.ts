@@ -39,7 +39,7 @@ describe("HandlerError", () => {
     }
   });
 
-  it("Requires at least one of message or cause", () => {
+  it("Properly handles all combinations of message and cause", () => {
     // Use a default message if neither `message` nor `cause` is provided.
     let error = new HandlerError("UNAVAILABLE");
     assert.equal(error.message, "Handler error");
