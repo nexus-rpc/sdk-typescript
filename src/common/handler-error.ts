@@ -9,7 +9,7 @@ import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
  * Example:
  *
  * ```ts
- *     import { HandlerError } from "@nexus-rpc/sdk-typescript";
+ *     import { HandlerError } from "nexus-rpc";
  *
  *     // Throw a bad request error
  *     throw new HandlerError("BAD_REQUEST", "Invalid input provided");
@@ -53,7 +53,11 @@ export class HandlerError extends Error {
    *
    * @experimental
    */
-  constructor(type: HandlerErrorType, message?: string | undefined, options?: HandlerErrorOptions) {
+  constructor(
+    type: HandlerErrorType,
+    message?: string | undefined,
+    options?: Omit<HandlerErrorOptions, "message">,
+  ) {
     const actualMessage = message || `Handler error: ${type}`;
 
     super(actualMessage, { cause: options?.cause });
@@ -64,7 +68,8 @@ export class HandlerError extends Error {
   /**
    * Wraps an error in a {@link HandlerError}.
    *
-   * This is a convenience method to wrap an existing error into a {@link HandlerError}.
+   * This is a convenience method to create an {@link HandlerError} that simply contains an
+   * existing error.
    *
    * @param type - The type of the error.
    * @param cause - The cause of the error.
@@ -75,7 +80,8 @@ export class HandlerError extends Error {
     cause: unknown,
     options?: Omit<HandlerErrorOptions, "cause">,
   ): HandlerError {
-    return new HandlerError(type, undefined, { ...options, cause });
+    const { message, ...rest } = options ?? {};
+    return new HandlerError(type, message, { ...rest, cause });
   }
 
   /**
@@ -121,6 +127,11 @@ injectSymbolBasedInstanceOf(HandlerError, "HandlerError");
  * @inline
  */
 export interface HandlerErrorOptions {
+  /**
+   * Message of the error.
+   */
+  message?: string | undefined;
+
   /**
    * Underlying cause of the error.
    */
