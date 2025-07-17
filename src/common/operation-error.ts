@@ -34,10 +34,17 @@ export class OperationError extends Error {
    */
   declare public readonly cause: Error;
 
+  /**
+   * Constructs a new {@link OperationError}.
+   *
+   * @param state - The state of the operation.
+   * @param message - The message of the error.
+   * @param options - Extra options for the error, e.g. the cause.
+   */
   constructor(
     state: OperationErrorState,
     message?: string | undefined,
-    options?: OperationErrorOptions,
+    options?: Omit<OperationErrorOptions, "message">,
   ) {
     const defaultMessage = state === "canceled" ? `Operation canceled` : `Operation failed`;
     const actualMessage = message || defaultMessage;
@@ -59,7 +66,7 @@ export class OperationError extends Error {
     cause: Error,
     options?: Omit<OperationErrorOptions, "cause">,
   ): OperationError {
-    return new OperationError(state, undefined, { ...options, cause });
+    return new OperationError(state, options?.message, { cause });
   }
 }
 
@@ -73,9 +80,14 @@ injectSymbolBasedInstanceOf(OperationError, "OperationError");
  */
 export interface OperationErrorOptions {
   /**
+   * Message of the error.
+   */
+  message?: string | undefined;
+
+  /**
    * Underlying cause of the error.
    */
-  cause: Error;
+  cause?: Error | undefined;
 }
 
 /**
@@ -84,5 +96,6 @@ export interface OperationErrorOptions {
  * This is a subset of {@link OperationState}.
  *
  * @experimental
+ * @inline
  */
 export type OperationErrorState = "failed" | "canceled";
