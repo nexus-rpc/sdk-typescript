@@ -70,8 +70,12 @@ export class HandlerError extends Error {
    * @param cause - The cause of the error.
    * @returns A new {@link HandlerError} instance wrapping the error.
    */
-  public static wrap(type: HandlerErrorType, cause: unknown): HandlerError {
-    return new HandlerError(type, undefined, { cause });
+  public static wrap(
+    type: HandlerErrorType,
+    cause: unknown,
+    options?: Omit<HandlerErrorOptions, "cause">,
+  ): HandlerError {
+    return new HandlerError(type, undefined, { ...options, cause });
   }
 
   /**
