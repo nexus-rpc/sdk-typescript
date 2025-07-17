@@ -1,4 +1,5 @@
-import { injectSymbolBasedInstanceOf } from "./internal/symbol-instanceof";
+import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
+import { Serializer } from "./serializer";
 
 /**
  * A container for a value encoded in an underlying stream.
@@ -15,7 +16,9 @@ export class LazyValue {
      */
     readonly headers: Record<string, string>,
 
-    /** ReadableStream that contains request or response data. May be undefined for empty data. */
+    /**
+     * ReadableStream that contains request or response data. May be undefined for empty data.
+     */
     public readonly stream?: ReadableStream<Uint8Array>,
   ) {}
 
@@ -50,31 +53,3 @@ export class LazyValue {
 }
 
 injectSymbolBasedInstanceOf(LazyValue, "LazyValue");
-
-/**
- * A container for a map of headers and a byte array of data.
- *
- * It is used by the SDK's {@link Serializer} interface implementations.
- */
-export interface Content {
-  /**
-   * Header that should include information on how to deserialize this content.
-   * Headers constructed by the framework always have lower case keys.
-   * User provided keys are considered case-insensitive by the framework.
-   */
-  headers: Record<string, string>;
-
-  /** Request or response data. May be undefined for empty data. */
-  data?: Uint8Array;
-}
-
-/**
- * Serializer is used by the framework to serialize/deserialize input and output.
- */
-export interface Serializer {
-  /** Serialize encodes a value into a {@link Content}. */
-  serialize(value: unknown): Content;
-
-  /** Deserialize decodes a {@link Content} into a value. */
-  deserialize<T = unknown>(content: Content): T;
-}
