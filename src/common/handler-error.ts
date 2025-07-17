@@ -9,7 +9,7 @@ import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
  * Example:
  *
  * ```ts
- *     import { HandlerError } from "@nexus-rpc/sdk-typescript";
+ *     import { HandlerError } from "nexus-rpc";
  *
  *     // Throw a bad request error
  *     throw new HandlerError("BAD_REQUEST", "Invalid input provided");
@@ -64,7 +64,8 @@ export class HandlerError extends Error {
   /**
    * Wraps an error in a {@link HandlerError}.
    *
-   * This is a convenience method to wrap an existing error into a {@link HandlerError}.
+   * This is a convenience method to create an {@link HandlerError} that simply contains an
+   * existing error.
    *
    * @param type - The type of the error.
    * @param cause - The cause of the error.

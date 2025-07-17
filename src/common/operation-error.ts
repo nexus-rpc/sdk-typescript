@@ -9,7 +9,7 @@ import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
  * Example:
  *
  * ```ts
- *     import { OperationError } from "@nexus-rpc/sdk-typescript";
+ *     import { OperationError } from "nexus-rpc";
  *
  *     // Throw a failed operation error
  *     throw new OperationError("failed", "Not enough inventory");
@@ -47,25 +47,19 @@ export class OperationError extends Error {
   }
 
   /**
-   * Create a new {@link OperationError} representing a failed operation.
+   * Wraps an error in a {@link OperationError}.
    *
-   * This is a convenience method to create an {@link OperationError} for a failed operation.
-   *
-   * @experimental
-   */
-  public static failed(cause: Error): OperationError {
-    return new OperationError("failed", undefined, { cause });
-  }
-
-  /**
-   * Create a new {@link OperationError} representing a canceled operation.
-   *
-   * This is a convenience method to create an {@link OperationError} for a canceled operation.
+   * This is a convenience method to create an {@link OperationError} that simply contains an
+   * existing error.
    *
    * @experimental
    */
-  public static canceled(cause: Error): OperationError {
-    return new OperationError("canceled", undefined, { cause });
+  public static wrap(
+    state: OperationErrorState,
+    cause: Error,
+    options?: Omit<OperationErrorOptions, "cause">,
+  ): OperationError {
+    return new OperationError(state, undefined, { ...options, cause });
   }
 }
 
