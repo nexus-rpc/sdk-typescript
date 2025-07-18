@@ -142,7 +142,10 @@ export abstract class OperationHandle<T> {
     public readonly token: string,
   ) {}
 
-  abstract getResult(options?: GetOperationResultOptions): Promise<T>;
+  async getResult(options?: GetOperationResultOptions): Promise<T> {
+    const { result } = await this.getResultWithDetails(options);
+    return result;
+  }
   abstract getResultWithDetails(options?: GetOperationResultOptions): Promise<ResultWithDetails<T>>;
   abstract getInfo(options?: GetOperationInfoOptions): Promise<OperationInfo>;
   abstract cancel(options?: CancelOperationOptions): Promise<void>;
