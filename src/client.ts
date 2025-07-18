@@ -74,12 +74,12 @@ export interface ExecuteOperationOptions extends StartOperationOptions {
 }
 
 export interface ClientStartOperationResultSync<T> {
-  isSync(): this is ClientStartOperationResultSync<T>;
+  isSync: true;
   readonly links: Link[];
   readonly result: T;
 }
 export interface ClientStartOperationResultAsync<T> {
-  isSync(): this is ClientStartOperationResultSync<T>;
+  isSync: false;
   readonly links: Link[];
   readonly handle: OperationHandle<T>;
 }
@@ -106,7 +106,7 @@ export abstract class ServiceClient<T extends Service> {
   ): Promise<any> {
     const { timeoutMs, ...startOptions } = options ?? {};
     const result = await this.startOperation(op, input, startOptions);
-    if (result.isSync()) {
+    if (result.isSync) {
       return result.result;
     }
     return await result.handle.getResult({ timeoutMs });
