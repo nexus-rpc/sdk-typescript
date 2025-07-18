@@ -31,7 +31,7 @@ interface StartOperationOptions {
    * Inbound links that contain arbitrary information, e.g. provided by the caller.
    * Used as metadata for the call.
    */
-  readonly inboundLinks?: Link[];
+  readonly links?: Link[];
 }
 
 interface CancelOperationOptions {
