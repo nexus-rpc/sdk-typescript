@@ -86,7 +86,7 @@ export interface ClientStartOperationResultAsync<T> {
 
 export type ClientStartOperationResult<T> = ClientStartOperationResultSync<T> | ClientStartOperationResultAsync<T>;
 
-export interface ServiceClient<T extends Service> {
+export abstract class ServiceClient<T extends Service> {
   executeOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     input: OperationInput<O>,
@@ -99,41 +99,56 @@ export interface ServiceClient<T extends Service> {
     options?: ExecuteOperationOptions,
   ): Promise<OperationOutput<T["operations"][K]>>;
 
-  startOperation<O extends T["operations"][keyof T["operations"]]>(
+  async executeOperation(
+    op: any,
+    input: any,
+    options?: ExecuteOperationOptions,
+  ): Promise<any> {
+    const { timeoutMs, ...startOptions } = options ?? {};
+    const result = await this.startOperation(op, input, startOptions);
+    if (result.isSync()) {
+      return result.result;
+    }
+    return await result.handle.getResult({ timeoutMs });
+  }
+
+  abstract startOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     input: OperationInput<O>,
     options?: StartOperationOptions,
   ): Promise<ClientStartOperationResult<OperationOutput<O>>>;
 
-  startOperation<K extends OperationKey<T["operations"]>>(
+  abstract startOperation<K extends OperationKey<T["operations"]>>(
     op: K,
     input: OperationInput<T["operations"][K]>,
     options?: StartOperationOptions,
   ): Promise<ClientStartOperationResult<OperationOutput<T["operations"][K]>>>;
 
-  getOperationHandle<O extends T["operations"][keyof T["operations"]]>(
+  abstract getOperationHandle<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     token: string,
   ): OperationHandle<OperationOutput<O>>;
 
-  getOperationHandle<K extends OperationKey<T["operations"]>>(
+  abstract getOperationHandle<K extends OperationKey<T["operations"]>>(
     op: K,
     token: string,
   ): OperationHandle<OperationOutput<T["operations"][K]>>;
 }
 
-export interface OperationHandle<T> {
-  readonly service: string;
-  readonly operation: string;
-  readonly token: string;
+export abstract class OperationHandle<T> {
+  constructor(
+    public readonly service: string,
+    public readonly operation: string,
+    public readonly token: string,
+  ) {}
 
-  getResult(options?: GetOperationResultOptions): Promise<T>;
-  getResultWithResponse(options?: GetOperationResultOptions): Promise<GetResultResponse<T>>;
-  getInfo(options?: GetOperationInfoOptions): Promise<OperationInfo>;
-  cancel(options?: CancelOperationOptions): Promise<void>;
+  abstract getResult(options?: GetOperationResultOptions): Promise<T>;
+  abstract getResultWithDetails(options?: GetOperationResultOptions): Promise<ResultWithDetails<T>>;
+  abstract getInfo(options?: GetOperationInfoOptions): Promise<OperationInfo>;
+  abstract cancel(options?: CancelOperationOptions): Promise<void>;
 }
 
-export interface GetResultResponse<T> {
+export interface ResultWithDetails<T> {
   result: T;
   links: Link[];
 }

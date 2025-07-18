@@ -28,7 +28,7 @@ export async function serviceClientTypeCheck(c: ServiceClient<typeof myService>)
     handle = c.getOperationHandle(myService.operations.myOp, "token");
     const _i: OperationInfo = await handle.getInfo();
     const _r: string = await handle.getResult();
-    const res = await handle.getResultWithResponse();
+    const res = await handle.getResultWithDetails();
     const _l: Link[] = res.links;
     const _r2: string = res.result;
   }
