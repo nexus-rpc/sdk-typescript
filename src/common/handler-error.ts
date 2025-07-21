@@ -53,35 +53,12 @@ export class HandlerError extends Error {
    *
    * @experimental
    */
-  constructor(
-    type: HandlerErrorType,
-    message?: string | undefined,
-    options?: Omit<HandlerErrorOptions, "message">,
-  ) {
+  constructor(type: HandlerErrorType, message?: string | undefined, options?: HandlerErrorOptions) {
     const actualMessage = message || `Handler error: ${type}`;
 
     super(actualMessage, { cause: options?.cause });
     this.type = type;
     this.retryableOverride = options?.retryableOverride;
-  }
-
-  /**
-   * Wraps an error in a {@link HandlerError}.
-   *
-   * This is a convenience method to create an {@link HandlerError} that simply contains an
-   * existing error.
-   *
-   * @param type - The type of the error.
-   * @param cause - The cause of the error.
-   * @returns A new {@link HandlerError} instance wrapping the error.
-   */
-  public static wrap(
-    type: HandlerErrorType,
-    cause: unknown,
-    options?: Omit<HandlerErrorOptions, "cause">,
-  ): HandlerError {
-    const { message, ...rest } = options ?? {};
-    return new HandlerError(type, message, { ...rest, cause });
   }
 
   /**
@@ -127,11 +104,6 @@ injectSymbolBasedInstanceOf(HandlerError, "HandlerError");
  * @inline
  */
 export interface HandlerErrorOptions {
-  /**
-   * Message of the error.
-   */
-  message?: string | undefined;
-
   /**
    * Underlying cause of the error.
    */

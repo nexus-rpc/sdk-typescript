@@ -44,29 +44,13 @@ export class OperationError extends Error {
   constructor(
     state: OperationErrorState,
     message?: string | undefined,
-    options?: Omit<OperationErrorOptions, "message">,
+    options?: OperationErrorOptions,
   ) {
     const defaultMessage = state === "canceled" ? `Operation canceled` : `Operation failed`;
     const actualMessage = message || defaultMessage;
 
     super(actualMessage, { cause: options?.cause });
     this.state = state;
-  }
-
-  /**
-   * Wraps an error in a {@link OperationError}.
-   *
-   * This is a convenience method to create an {@link OperationError} that simply contains an
-   * existing error.
-   *
-   * @experimental
-   */
-  public static wrap(
-    state: OperationErrorState,
-    cause: Error,
-    options?: Omit<OperationErrorOptions, "cause">,
-  ): OperationError {
-    return new OperationError(state, options?.message, { cause });
   }
 }
 
@@ -79,11 +63,6 @@ injectSymbolBasedInstanceOf(OperationError, "OperationError");
  * @inline
  */
 export interface OperationErrorOptions {
-  /**
-   * Message of the error.
-   */
-  message?: string | undefined;
-
   /**
    * Underlying cause of the error.
    */
