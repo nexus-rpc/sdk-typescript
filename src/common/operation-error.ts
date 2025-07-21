@@ -1,40 +1,80 @@
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
 
 /**
- * Options for constructing an {@link OperationError} from a message and operation state.
- */
-export interface OperationErrorMessageOptions {
-  /** Error message. */
-  message: string;
-
-  /** State of the operation. */
-  state: "canceled" | "failed";
-}
-
-/**
- * Options for constructing an {@link OperationError} from an underlying cause and operation state.
- */
-export interface OperationErrorCauseOptions extends ErrorOptions {
-  /** State of the operation. */
-  state: "canceled" | "failed";
-}
-
-/**
- * Options for constructing an {@link OperationError} from either a message or an underlying cause.
- */
-export type OperationErrorOptions = OperationErrorMessageOptions | OperationErrorCauseOptions;
-
-/**
- * An error that represents "failed" and "canceled" operation results.
+ * A Nexus operation error.
+ *
+ * This error class represents the abnormal completion of a Nexus operation,
+ * that should be reported to the caller as an operation error.
+ *
+ * Example:
+ *
+ * ```ts
+ *     import { OperationError } from "nexus-rpc";
+ *
+ *     // Throw a failed operation error
+ *     throw new OperationError("failed", "Not enough inventory");
+ *
+ *     // Throw a failed operation error, with a cause
+ *     throw new OperationError("failed", "Not enough inventory", { cause });
+ *
+ *     // Throw a canceled operation error
+ *     throw new OperationError("canceled", "User canceled the operation");
+ * ```
+ *
+ * @experimental
  */
 export class OperationError extends Error {
-  /** State of the operation. */
-  public readonly state: "canceled" | "failed";
+  /**
+   * State of the operation.
+   */
+  public readonly state: OperationErrorState;
 
-  constructor(options: OperationErrorOptions) {
-    super((options as any).message, options as any as ErrorOptions);
-    this.state = options.state;
+  /**
+   * The error that resulted in this operation error.
+   */
+  declare public readonly cause: Error;
+
+  /**
+   * Constructs a new {@link OperationError}.
+   *
+   * @param state - The state of the operation.
+   * @param message - The message of the error.
+   * @param options - Extra options for the error, e.g. the cause.
+   */
+  constructor(
+    state: OperationErrorState,
+    message?: string | undefined,
+    options?: OperationErrorOptions,
+  ) {
+    const defaultMessage = state === "canceled" ? `Operation canceled` : `Operation failed`;
+    const actualMessage = message || defaultMessage;
+
+    super(actualMessage, { cause: options?.cause });
+    this.state = state;
   }
 }
 
 injectSymbolBasedInstanceOf(OperationError, "OperationError");
+
+/**
+ * Options for constructing an {@link OperationError}.
+ *
+ * @experimental
+ * @inline
+ */
+export interface OperationErrorOptions {
+  /**
+   * Underlying cause of the error.
+   */
+  cause?: Error | undefined;
+}
+
+/**
+ * Describes state of an operation that did not complete successfully.
+ *
+ * This is a subset of {@link OperationState}.
+ *
+ * @experimental
+ * @inline
+ */
+export type OperationErrorState = "failed" | "canceled";
