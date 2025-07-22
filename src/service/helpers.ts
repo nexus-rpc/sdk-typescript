@@ -1,43 +1,32 @@
-import { inputBrand, outputBrand } from "./service-definition";
-import { Operation, Service } from "./service-definition";
+import { mapKeyValues } from "../internal/object-utils";
+import { Simplify } from "../internal/types";
+import { inputBrand, outputBrand, validateServiceDefinition } from "./service-definition";
+import { OperationDefinition, ServiceDefinition } from "./service-definition";
 
 /**
- * Constructs a service definition for a collection of operations.
+ * Construct a service definition for a collection of operations.
  */
 export function service<Ops extends PartialOperationMap>(
   name: string,
   operations: Ops,
-): Service<OperationMapFromPartial<Ops>> {
-  if (!name) {
-    throw new TypeError("Service name must be a non-empty string");
-  }
-  const uniqueNames = new Set<string>();
+): ServiceDefinition<Simplify<OperationMapFromPartial<Ops>>> {
+  const service = {
+    name,
+    operations: mapKeyValues(operations, (key, op: PartialOperation<any, any>) => ({
+      ...op,
+      name: op.name || key,
+    })),
+  } as ServiceDefinition<OperationMapFromPartial<Ops>>;
 
-  const fullOps: OperationMapFromPartial<Ops> = Object.fromEntries(
-    Object.entries(operations).map(([key, op]) => {
-      const name = op.name || key;
-      if (uniqueNames.has(name)) {
-        throw new TypeError(`Duplicate operation definition for ${name}`);
-      }
-      uniqueNames.add(name);
-      return [
-        key,
-        {
-          ...op,
-          name,
-        },
-      ];
-    }),
-  ) as any; // TS is having a hard time inferring the correct type here.
-
-  return { name, operations: fullOps };
+  validateServiceDefinition(service);
+  return service;
 }
 
 /**
- * Constructs an operation definition as part of a service contract.
+ * Construct an operation definition as part of a service contract.
  */
 export function operation<I, O>(op?: OperationOptions<I, O>): PartialOperation<I, O> {
-  return op ?? ({} as any);
+  return { ...op } as PartialOperation<I, O>;
 }
 
 /**
@@ -57,14 +46,14 @@ export type PartialOperationMap = Record<string, PartialOperation<any, any>>;
  */
 export type OperationMapFromPartial<T extends PartialOperationMap> = {
   [K in keyof T & string]: T[K] extends PartialOperation<infer I, infer O>
-    ? Operation<I, O>
+    ? OperationDefinition<I, O>
     : never;
 };
 
 /**
- * A partial {@link Operation} that is used to define an operation in a {@link Service}.
+ * A partial {@link OperationDefinition} that is used to define an operation in a {@link ServiceDefinition}.
  *
- * The difference between this and {@link Operation} is that the name is optional.
+ * The difference between this and {@link OperationDefinition} is that the name is optional.
  */
 export interface PartialOperation<I, O> {
   name?: string;

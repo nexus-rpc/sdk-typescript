@@ -1,5 +1,5 @@
 import { HandlerError, Link, OperationInfo } from "./common";
-import { Operation, OperationMap, Service } from "./service";
+import { OperationDefinition, OperationMap, ServiceDefinition } from "./service";
 import { LazyValue } from "./serializer";
 
 /**
@@ -158,7 +158,7 @@ export type SyncOperationHandler<I, O> = (ctx: StartOperationContext, input: I) 
  * A type that defines a handler for a given operation.
  */
 export type OperationHandlerFor<T> =
-  T extends Operation<infer I, infer O>
+  T extends OperationDefinition<infer I, infer O>
     ? OperationHandler<I, O> | SyncOperationHandler<I, O>
     : never;
 
@@ -172,7 +172,8 @@ export type ServiceHandlerFor<T extends OperationMap = OperationMap> = {
 /**
  * A {@link Service} that includes a collection of handlers for its operations.
  */
-export interface ServiceHandler<T extends OperationMap = OperationMap> extends Service<T> {
+export interface ServiceHandler<T extends OperationMap = OperationMap>
+  extends ServiceDefinition<T> {
   handlers: ServiceHandlerFor<T>;
 }
 
@@ -180,7 +181,7 @@ export interface ServiceHandler<T extends OperationMap = OperationMap> extends S
  * Constructs a service handler for a given service contract.
  */
 export function serviceHandler<T extends OperationMap>(
-  service: Service<T>,
+  service: ServiceDefinition<T>,
   handlers: ServiceHandlerFor<T>,
 ): ServiceHandler<T> {
   const ops = new Set<string>();
