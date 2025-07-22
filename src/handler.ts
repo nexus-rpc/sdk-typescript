@@ -1,5 +1,5 @@
 import { HandlerError, Link, OperationInfo } from "./common";
-import { Operation, OperationMap, Service } from "./operation";
+import { Operation, OperationMap, Service } from "./service";
 import { LazyValue } from "./serializer";
 
 /**

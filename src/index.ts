@@ -1,4 +1,5 @@
 export * from "./common";
+export * from "./service";
 
 export {
   type OperationContext,
@@ -17,20 +18,5 @@ export {
   serviceHandler,
   ServiceRegistry,
 } from "./handler";
-
-export {
-  type Operation,
-  type OperationMap,
-  type PartialOperationMap,
-  type OperationMapFromPartial,
-  type Service,
-  service,
-  type OperationOptions,
-  type PartialOperation,
-  operation,
-  type OperationKey,
-  type OperationInput,
-  type OperationOutput,
-} from "./operation";
 
 export { LazyValue, type Content, type Serializer } from "./serializer";
