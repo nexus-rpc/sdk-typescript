@@ -1,5 +1,6 @@
 import { Link, OperationInfo } from "./common";
 import { Service, OperationKey, OperationInput, OperationOutput } from "./operation";
+import { Transport } from "./transport";
 
 interface StartOperationOptions {
   /** Request header fields. */
@@ -86,7 +87,13 @@ export interface ClientStartOperationResultAsync<T> {
 
 export type ClientStartOperationResult<T> = ClientStartOperationResultSync<T> | ClientStartOperationResultAsync<T>;
 
-export abstract class ServiceClient<T extends Service> {
+export class ServiceClient<T extends Service> {
+  constructor(
+    public readonly service: string,
+    private readonly transport: Transport,
+  ) {
+  }
+
   executeOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     input: OperationInput<O>,
@@ -112,46 +119,122 @@ export abstract class ServiceClient<T extends Service> {
     return await result.handle.getResult({ timeoutMs });
   }
 
-  abstract startOperation<O extends T["operations"][keyof T["operations"]]>(
+  startOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     input: OperationInput<O>,
     options?: StartOperationOptions,
   ): Promise<ClientStartOperationResult<OperationOutput<O>>>;
 
-  abstract startOperation<K extends OperationKey<T["operations"]>>(
+  startOperation<K extends OperationKey<T["operations"]>>(
     op: K,
     input: OperationInput<T["operations"][K]>,
     options?: StartOperationOptions,
   ): Promise<ClientStartOperationResult<OperationOutput<T["operations"][K]>>>;
 
-  abstract getOperationHandle<O extends T["operations"][keyof T["operations"]]>(
+  async startOperation(
+    op: any,
+    input: any,
+    options?: StartOperationOptions,
+  ): Promise<ClientStartOperationResult<any>> {
+    const opName = getOpName(op)
+    const response = await this.transport.startOperation(this.service, opName, input, options ?? {});
+    if (response.isSync) {
+      return {
+        isSync: true,
+        links: response.links,
+        result: response.result,
+      };
+    }
+    return {
+      isSync: false,
+      links: response.links,
+      handle: new OperationHandle(
+        this.service,
+        opName,
+        response.token,
+        this.transport,
+      ),
+    };
+  }
+
+  getOperationHandle<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     token: string,
   ): OperationHandle<OperationOutput<O>>;
 
-  abstract getOperationHandle<K extends OperationKey<T["operations"]>>(
+  getOperationHandle<K extends OperationKey<T["operations"]>>(
     op: K,
     token: string,
   ): OperationHandle<OperationOutput<T["operations"][K]>>;
+
+  getOperationHandle(
+    op: any,
+    token: string,
+  ): OperationHandle<OperationOutput<any>> {
+    return new OperationHandle<any>(
+      this.service,
+      getOpName(op),
+      token,
+      this.transport,
+    );
+  }
 }
 
-export abstract class OperationHandle<T> {
+export class OperationHandle<T> {
   constructor(
     public readonly service: string,
     public readonly operation: string,
     public readonly token: string,
+    private readonly transport: Transport,
   ) {}
 
   async getResult(options?: GetOperationResultOptions): Promise<T> {
     const { result } = await this.getResultWithDetails(options);
     return result;
   }
-  abstract getResultWithDetails(options?: GetOperationResultOptions): Promise<ResultWithDetails<T>>;
-  abstract getInfo(options?: GetOperationInfoOptions): Promise<OperationInfo>;
-  abstract cancel(options?: CancelOperationOptions): Promise<void>;
+
+  async getResultWithDetails(options?: GetOperationResultOptions): Promise<ClientResultWithDetails<T>> {
+    const { links, result } = await this.transport.getOperationResult(
+      this.service,
+      this.operation,
+      this.token,
+      options ?? {},
+    );
+    return {
+      links,
+      result: result as T,
+    };
+  }
+  async getInfo(options?: GetOperationInfoOptions): Promise<OperationInfo> {
+    const { info } = await this.transport.getOperationInfo(
+      this.service,
+      this.operation,
+      this.token,
+      options ?? {},
+    );
+    return info;
+  }
+
+  async cancel(options?: CancelOperationOptions): Promise<void> {
+    await this.transport.cancelOperation(
+      this.service,
+      this.operation,
+      this.token,
+      options ?? {},
+    );
+  }
 }
 
-export interface ResultWithDetails<T> {
+export interface ClientResultWithDetails<T> {
   result: T;
   links: Link[];
+}
+
+function getOpName(op: any): string {
+    if (typeof op === "object" && Object.hasOwnProperty.call(op, "name") && typeof op.name === "string") {
+    return op.name;
+    } else if (typeof op === "string") {
+    return op;
+    }
+    throw new TypeError('invalid operation');
 }
