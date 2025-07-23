@@ -1,6 +1,6 @@
 export {
-  type Service,
-  type Operation,
+  type ServiceDefinition,
+  type OperationDefinition,
   type OperationMap,
   type OperationInput,
   type OperationOutput,
