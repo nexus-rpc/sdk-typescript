@@ -1,5 +1,5 @@
 import { HandlerError, OperationInfo } from "../common";
-import { LazyValue } from "../serializer";
+import { LazyValue } from "../serialization";
 import { HandlerStartOperationResult } from "./start-operation-result";
 import {
   OperationContext,
