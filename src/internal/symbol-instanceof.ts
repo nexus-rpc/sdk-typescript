@@ -22,6 +22,7 @@
  * checking for the presence of that symbol.
  *
  * @internal
+ * @hidden
  */
 export function injectSymbolBasedInstanceOf<E>(clazz: Class<E>, markerName: string): void {
   // It may seem redundant to have an explicit markerName argument here. Can't we simply use the class

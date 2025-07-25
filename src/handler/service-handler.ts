@@ -3,6 +3,8 @@ import { OperationHandler, SyncOperationHandler } from "./operation-handler";
 
 /**
  * A type that defines a handler for a given operation.
+ *
+ * @experimental
  */
 export type OperationHandlerFor<T> =
   T extends OperationDefinition<infer I, infer O>
@@ -11,13 +13,17 @@ export type OperationHandlerFor<T> =
 
 /**
  * A type that defines a collection of handlers for a given collection of operation interfaces.
+ *
+ * @experimental
  */
 export type ServiceHandlerFor<T extends OperationMap = OperationMap> = {
   [K in keyof T & string]: OperationHandlerFor<T[K]>;
 };
 
 /**
- * A {@link Service} that includes a collection of handlers for its operations.
+ * A Service that includes a collection of handlers for its operations.
+ *
+ * @experimental
  */
 export interface ServiceHandler<T extends OperationMap = OperationMap>
   extends ServiceDefinition<T> {
@@ -26,6 +32,8 @@ export interface ServiceHandler<T extends OperationMap = OperationMap>
 
 /**
  * Constructs a service handler for a given service contract.
+ *
+ * @experimental
  */
 export function serviceHandler<T extends OperationMap>(
   service: ServiceDefinition<T>,

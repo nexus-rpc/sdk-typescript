@@ -6,6 +6,9 @@
  * @param fn - The mapper function.
  *
  * @returns A new object with the properties mapped to the new type.
+ *
+ * @internal
+ * @hidden
  */
 export function mapKeyValues<T extends Record<string, any>, U>(
   obj: T,

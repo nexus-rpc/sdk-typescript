@@ -9,6 +9,8 @@ import {
 
 /**
  * A handler for an operation.
+ *
+ * @experimental
  */
 export interface OperationHandler<I, O> {
   /**
@@ -27,21 +29,17 @@ export interface OperationHandler<I, O> {
    *
    * Throw an {@link OperationError} to indicate that an operation completed as failed or canceled.
    *
-   * When {@link GetOperationResultContext["wait"]} is greater than zero, this request should be treated as a long poll.
-   * Note that the specified wait duration may be longer than the configured client or server side request timeout, and
-   * should be handled separately.
+   * When {@link GetOperationResultContext.timeoutMs | timeoutMs} is greater than zero, this request should be treated
+   * as a long poll. Note that the specified wait duration may be longer than the configured client or server side
+   * request timeout, and should be handled separately.
    *
    * It is the implementor's responsiblity to respect the client's wait duration and return in a timely fashion, leaving
    * enough time for the request to complete and the response to be sent back.
-   *
-   * @experimental
    */
   getResult(ctx: GetOperationResultContext, token: string): Promise<O>;
 
   /**
    * GetInfo handles requests to get information about an asynchronous operation.
-   *
-   * @experimental
    */
   getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo>;
 
@@ -57,7 +55,9 @@ export interface OperationHandler<I, O> {
 }
 
 /**
- * A shortcut for defining an operation handler that only implements the {@link OperationHandler["start"]} method and
+ * A shortcut for defining an operation handler that only implements the {@link OperationHandler.start} method and
  * always returns a {@link HandlerStartOperationResultSync}.
+ *
+ * @experimental
  */
 export type SyncOperationHandler<I, O> = (ctx: StartOperationContext, input: I) => Promise<O>;

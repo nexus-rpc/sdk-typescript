@@ -40,6 +40,8 @@ export class OperationError extends Error {
    * @param state - The state of the operation.
    * @param message - The message of the error.
    * @param options - Extra options for the error, e.g. the cause.
+   *
+   * @experimental
    */
   constructor(
     state: OperationErrorState,
