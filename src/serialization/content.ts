@@ -2,6 +2,8 @@
  * A container for a map of headers and a byte array of data.
  *
  * It is used by the SDK's {@link Serializer} interface implementations.
+ *
+ * @experimental
  */
 export interface Content {
   /**

@@ -2,6 +2,8 @@ import { Content } from "./content";
 
 /**
  * Serializer is used by the framework to serialize/deserialize input and output.
+ *
+ * @experimental
  */
 export interface Serializer {
   /**

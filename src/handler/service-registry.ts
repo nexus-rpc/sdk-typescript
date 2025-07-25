@@ -13,6 +13,8 @@ import { OperationHandler, SyncOperationHandler } from "./operation-handler";
 
 /**
  * A collection of service handlers that dispatches requests to the registered service and operation handler.
+ *
+ * @experimental
  */
 export class ServiceRegistry implements OperationHandler<unknown, unknown> {
   private services = new Map<
@@ -20,6 +22,9 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     Map<string, OperationHandler<any, any> | SyncOperationHandler<any, any>>
   >();
 
+  /**
+   * @experimental
+   */
   constructor(services: ServiceHandler[]) {
     for (const s of services) {
       if (!s.name) {

@@ -2,23 +2,35 @@ import { Link } from "../common";
 
 /**
  * General handler context that is common to all handler methods.
+ *
+ * @experimental
  */
 export interface OperationContext {
-  /** Name of the service that contains the operation. */
+  /**
+   * Name of the service that contains the operation.
+   */
   readonly service: string;
 
-  /** Name of the operation. */
+  /**
+   * Name of the operation.
+   */
   readonly operation: string;
 
-  /** Request header fields. */
+  /**
+   * Request header fields.
+   */
   readonly headers: Record<string, string>;
 
-  /** Signaled when the current request is canceled. */
+  /**
+   * Signaled when the current request is canceled.
+   */
   readonly abortSignal: AbortSignal;
 }
 
 /**
- * Context for the {@link OperationHandler["start"]} method.
+ * Context for the {@link OperationHandler.start} method.
+ *
+ * @experimental
  */
 export interface StartOperationContext extends OperationContext {
   /**
@@ -54,24 +66,28 @@ export interface StartOperationContext extends OperationContext {
 }
 
 /**
- * Context for the {@link OperationHandler["getInfo"]} method.
+ * Context for the {@link OperationHandler.getInfo} method.
+ *
+ * @experimental
  */
 export type GetOperationInfoContext = OperationContext;
 
 /**
- * Context for the {@link OperationHandler["getResult"]} method.
+ * Context for the {@link OperationHandler.getResult} method.
+ *
+ * @experimental
  */
 export interface GetOperationResultContext extends OperationContext {
   /**
    * If specified and non-zero, reflects the duration (in milliseconds) the caller has indicated that it wants to wait
    * for operation completion, turning the request into a long poll.
-   *
-   * @experimental
    */
   readonly timeoutMs: number | undefined;
 }
 
 /**
- * Context for the {@link OperationHandler["cancel"]} method.
+ * Context for the {@link OperationHandler.cancel} method.
+ *
+ * @experimental
  */
 export type CancelOperationContext = OperationContext;

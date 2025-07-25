@@ -4,8 +4,13 @@ import { Serializer } from "./serializer";
 /**
  * A container for a value encoded in an underlying stream.
  * It is used to stream inputs and outputs in the various client and server APIs.
+ *
+ * @experimental
  */
 export class LazyValue {
+  /**
+   * @experimental
+   */
   constructor(
     readonly serializer: Serializer,
 

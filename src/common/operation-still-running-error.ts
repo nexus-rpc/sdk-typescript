@@ -6,6 +6,9 @@ import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
  * @experimental
  */
 export class OperationStillRunningError extends Error {
+  /**
+   * @experimental
+   */
   constructor() {
     super("Operation still running");
   }

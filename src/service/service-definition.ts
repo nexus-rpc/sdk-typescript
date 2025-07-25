@@ -5,6 +5,8 @@ export declare const outputBrand: unique symbol;
  * Definition of a Nexus service contract, including its name and operations.
  *
  * Can only be constructed by the {@link service} function.
+ *
+ * @experimental
  */
 export interface ServiceDefinition<Ops extends OperationMap = OperationMap> {
   name: string;
@@ -13,6 +15,8 @@ export interface ServiceDefinition<Ops extends OperationMap = OperationMap> {
 
 /**
  * An operation contract that describes the name, and input and output types of an operation.
+ *
+ * @experimental
  */
 export interface OperationDefinition<I, O> {
   name: string;
@@ -22,21 +26,29 @@ export interface OperationDefinition<I, O> {
 
 /**
  * A named collection of operations, as defined by a {@link ServiceDefinition}.
+ *
+ * @experimental
  */
 export type OperationMap = Record<string, OperationDefinition<any, any>>;
 
 /**
  * A mapped type that extracts the input type from an operation in a service.
+ *
+ * @experimental
  */
 export type OperationInput<T> = T extends OperationDefinition<infer I, any> ? I : any;
 
 /**
  * A mapped type that extracts the output type from an operation in a service.
+ *
+ * @experimental
  */
 export type OperationOutput<T> = T extends OperationDefinition<any, infer O> ? O : any;
 
 /**
  * A mapped type that extracts all operation names from a service.
+ *
+ * @experimental
  */
 export type OperationKey<T> = {
   [K in keyof T & string]: T[K] extends OperationDefinition<any, any> ? K : never;
@@ -48,6 +60,8 @@ export type OperationKey<T> = {
  * @param service - The service definition to validate.
  *
  * @throws {TypeError} If the service definition is invalid.
+ *
+ * @experimental
  */
 export function validateServiceDefinition(service: ServiceDefinition) {
   if (typeof service.name !== "string" || !service.name) {
