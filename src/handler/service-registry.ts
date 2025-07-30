@@ -81,7 +81,7 @@ export class ServiceRegistry implements OperationHandler<unknown, unknown> {
     const input = await lv.consume<any>();
     if (typeof handler === "function") {
       const value = await handler(ctx, input);
-      return { value };
+      return HandlerStartOperationResult.sync(value);
     }
     return await handler.start(ctx, input);
   }

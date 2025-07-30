@@ -7,9 +7,9 @@ export {
 } from "./operation-context";
 
 export {
+  HandlerStartOperationResult,
   type HandlerStartOperationResultSync,
   type HandlerStartOperationResultAsync,
-  type HandlerStartOperationResult,
 } from "./start-operation-result";
 
 export {
