@@ -112,17 +112,11 @@ describe("ServiceRegistry", () => {
   it("routes start to the correct handler", async () => {
     assert.deepEqual(
       await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")),
-      {
-        isAsync: false,
-        value: "test",
-      },
+      nexus.HandlerStartOperationResult.sync("test"),
     );
     assert.deepEqual(
       await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
-      {
-        isAsync: false,
-        value: 1,
-      },
+      nexus.HandlerStartOperationResult.sync(1),
     );
   });
 

@@ -1,9 +1,18 @@
 /** @import { OperationHandler } from "./operation-handler" */
 
 /**
- * The return type from the {@link OperationHandler.start} method. May be synchronous or asynchronous.
+ * An internal symbol, used to prevent direct implementation of interfaces.
  *
- * @see {@link HandlerStartOperationResult.sync} or {@link HandlerStartOperationResult.async}
+ * @hidden
+ * @internal
+ */
+const isHandlerStartOperationResultSymbol = Symbol("__nexus_isHandlerStartOperationResult");
+
+/**
+ * The return type from the {@link OperationHandler.start} method.
+ *
+ * Use either {@link HandlerStartOperationResult.sync} or {@link HandlerStartOperationResult.async}
+ * to create a result object. Do not implement this interface directly.
  *
  * @experimental
  */
@@ -12,7 +21,10 @@ export type HandlerStartOperationResult<T = unknown> =
   | HandlerStartOperationResultAsync;
 
 /**
- * The return type from the {@link OperationHandler.start} method. The result may be synchronous or asynchronous.
+ * The return type from the {@link OperationHandler.start} method.
+ *
+ * Use either {@link HandlerStartOperationResult.sync} or {@link HandlerStartOperationResult.async}
+ * to create a result object. Do not implement this interface directly.
  *
  * @experimental
  */
@@ -24,6 +36,7 @@ export const HandlerStartOperationResult = {
     return {
       isAsync: true,
       token,
+      [isHandlerStartOperationResultSymbol]: true,
     };
   },
 
@@ -34,12 +47,24 @@ export const HandlerStartOperationResult = {
     return {
       isAsync: false,
       value,
+      [isHandlerStartOperationResultSymbol]: true,
     };
+  },
+
+  [Symbol.hasInstance]: function (this: any, value: object): boolean {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      (value as any)[isHandlerStartOperationResultSymbol] === true
+    );
   },
 };
 
 /**
  * A result that indicates that an operation completed successfully.
+ *
+ * Use {@link HandlerStartOperationResult.sync} to create a sync result object.
+ * Do not implement this interface directly.
  *
  * @example
  * ```typescript
@@ -50,7 +75,8 @@ export const HandlerStartOperationResult = {
  */
 export interface HandlerStartOperationResultSync<T = unknown> {
   /**
-   * Indicate whether the operation will complete synchronously (false) or asynchronously (true).
+   * Indicate whether the operation completed synchronously (false) or will complete
+   * asynchronously (true).
    */
   isAsync: false;
 
@@ -58,10 +84,21 @@ export interface HandlerStartOperationResultSync<T = unknown> {
    * The return value of the operation.
    */
   value: T;
+
+  /**
+   * Prevents direct implementation of this interface.
+   *
+   * @hidden
+   * @internal
+   */
+  [isHandlerStartOperationResultSymbol]: true;
 }
 
 /**
  * A result that indicates that an operation has been accepted and will complete asynchronously.
+ *
+ * Use {@link HandlerStartOperationResult.async} to create an async result object.
+ * Do not implement this interface directly.
  *
  * @example
  * ```typescript
@@ -72,7 +109,8 @@ export interface HandlerStartOperationResultSync<T = unknown> {
  */
 export interface HandlerStartOperationResultAsync {
   /**
-   * Indicate whether the operation will complete synchronously (false) or asynchronously (true).
+   * Indicate whether the operation completed synchronously (false) or will complete
+   * asynchronously (true).
    */
   isAsync: true;
 
@@ -81,4 +119,12 @@ export interface HandlerStartOperationResultAsync {
    * and {@link OperationHandler.cancel}.
    */
   token: string;
+
+  /**
+   * Prevents direct implementation of this interface.
+   *
+   * @hidden
+   * @internal
+   */
+  [isHandlerStartOperationResultSymbol]: true;
 }
