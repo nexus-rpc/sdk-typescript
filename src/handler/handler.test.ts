@@ -13,7 +13,7 @@ const myServiceHandler = nexus.serviceHandler(myService, {
   },
   fullOp: {
     async start(_ctx, input) {
-      return { value: input };
+      return nexus.HandlerStartOperationResult.sync(input);
     },
     async cancel(_ctx, _token) {
       //
@@ -34,7 +34,7 @@ describe("serviceHandler", () => {
     }
     fullOp: nexus.OperationHandler<number, number> = {
       async start(_ctx, input) {
-        return { value: input };
+        return nexus.HandlerStartOperationResult.sync(input);
       },
       async cancel(_ctx, _token) {
         //
@@ -112,15 +112,11 @@ describe("ServiceRegistry", () => {
   it("routes start to the correct handler", async () => {
     assert.deepEqual(
       await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")),
-      {
-        value: "test",
-      },
+      nexus.HandlerStartOperationResult.sync("test"),
     );
     assert.deepEqual(
       await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
-      {
-        value: 1,
-      },
+      nexus.HandlerStartOperationResult.sync(1),
     );
   });
 
