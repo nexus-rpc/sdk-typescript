@@ -1,7 +1,7 @@
 import { Link } from "../common";
 
 /**
- * General handler context that is common to all handler methods.
+ * Contextual information provided to every operation handler method.
  *
  * @experimental
  */
@@ -22,7 +22,17 @@ export interface OperationContext {
   readonly headers: Record<string, string>;
 
   /**
-   * Signaled when the current request is canceled.
+   * An AbortSignal that is signaled when the current request is canceled, e.g. because the request
+   * timed out or the client disconnected.
+   *
+   * The framework will cancel the abort controller with an unspecified error type. The handler
+   * must rethrow the error object to confirm cancelation. The handler may ignore cancelation
+   * and return a result anyway, but there is no guarantee that the client will still be waiting
+   * for the result of that request.
+   *
+   * Note that cancelation of the current _request_ is not the same thing - and does not relate
+   * with - cancelation of the _operation_ itself, which is notified by calling the
+   * {@link OperationHandler.cancel} method.
    */
   readonly abortSignal: AbortSignal;
 }
@@ -35,14 +45,15 @@ export interface OperationContext {
 export interface StartOperationContext extends OperationContext {
   /**
    * Callbacks are used to deliver completion of async operations.
-   * This value may optionally be set by the client and should be called by a handler upon completion if the started
-   * operation is async.
+   *
+   * An HTTP callback URL may optionally be provided by the client and should be called by this
+   * handler upon completion if the started operation is async.
    */
-  readonly callbackURL?: string;
+  readonly callbackUrl?: string;
 
   /**
-   * Optional header fields set by a client that are required to be attached to the callback request when an
-   * asynchronous operation completes.
+   * Optional header fields set by a client that are required to be attached to the callback request
+   * when an asynchronous operation completes.
    */
   readonly callbackHeaders?: Record<string, string>;
 
@@ -53,14 +64,19 @@ export interface StartOperationContext extends OperationContext {
   readonly requestId?: string;
 
   /**
-   * Inbound links that contain arbitrary information, e.g. provided by the caller.
-   * Used as metadata for the call.
+   * Links received in the request.
+   *
+   * This list is automatically populated when handling a start request. Handlers may use these
+   * links, for example to add information about the caller to a resource associated with the
+   * operation execution.
    */
   readonly inboundLinks: Link[];
 
   /**
-   * Outbound links that will be propagated back to the caller. A handler implementation may
-   * mutate this array, e.g. by calling `push` directly, to attach additional links.
+   * Links to be returned by the handler.
+   *
+   * This list is initially empty. Handlers may add to this list, for example links describing
+   * resources associated with the operation execution that may be of use to the caller.
    */
   readonly outboundLinks: Link[];
 }
@@ -79,8 +95,8 @@ export type GetOperationInfoContext = OperationContext;
  */
 export interface GetOperationResultContext extends OperationContext {
   /**
-   * If specified and non-zero, reflects the duration (in milliseconds) the caller has indicated that it wants to wait
-   * for operation completion, turning the request into a long poll.
+   * If specified and non-zero, reflects the duration (in milliseconds) the caller has indicated
+   * that it wants to wait for operation completion, turning the request into a long poll.
    */
   readonly timeoutMs: number | undefined;
 }
