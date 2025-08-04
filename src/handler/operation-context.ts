@@ -46,8 +46,8 @@ export interface StartOperationContext extends OperationContext {
   /**
    * Callbacks are used to deliver completion of async operations.
    *
-   * An HTTP callback URL may optionally be provided by the client and should be called by this
-   * handler upon completion if the started operation is async.
+   * A callback URL may optionally be provided by the client and should be called by this handler
+   * upon completion if the started operation is async.
    */
   readonly callbackUrl?: string;
 
