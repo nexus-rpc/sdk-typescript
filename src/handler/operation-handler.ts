@@ -1,4 +1,4 @@
-import { OperationInfo } from "../common";
+import { HandlerError, OperationInfo } from "../common";
 import { HandlerStartOperationResult } from "./start-operation-result";
 import {
   CancelOperationContext,
@@ -6,9 +6,18 @@ import {
   GetOperationResultContext,
   StartOperationContext,
 } from "./operation-context";
+import {
+  OperationDefinition,
+  OperationInput,
+  OperationKey,
+  OperationMap,
+  OperationOutput,
+} from "../service";
 
 /**
- * A handler for an operation.
+ * A handler for a Nexus operation.
+ *
+ * This interface is meant to be implemented by Nexus service implementors.
  *
  * @experimental
  */
@@ -63,3 +72,78 @@ export interface OperationHandler<I, O> {
  * @experimental
  */
 export type SyncOperationHandler<I, O> = (ctx: StartOperationContext, input: I) => Promise<O>;
+
+/**
+ * Compiles an operation handler into a {@link CompiledOperationHandler}. A compiled operation
+ * handler is a single object that is both an operation definition and a full-fledged operation
+ * handler for that operation.
+ *
+ * @hidden
+ * @internal
+ */
+export function compileOperationHandler<I, O>(
+  definition: OperationDefinition<I, O>,
+  handler: OperationHandler<I, O> | SyncOperationHandler<I, O> | undefined,
+): CompiledOperationHandler<I, O> {
+  if (handler == null) {
+    throw new TypeError(
+      `No handler registered for operation '${definition.name}' (expected property name '${definition.name}')`,
+    );
+  }
+
+  if (typeof handler === "function") {
+    // Operation handler is declared using the shortcut syntax. Wrap it into a full-fledged handler.
+    return {
+      ...definition,
+
+      start: async (ctx, input) => {
+        return HandlerStartOperationResult.sync(await handler(ctx, input));
+      },
+      getInfo: notImplemented,
+      getResult: notImplemented,
+      cancel: notImplemented,
+    };
+  }
+
+  if (typeof handler.start !== "function") {
+    throw new TypeError(`Handler for operation '${definition.name}' has no start method`);
+  }
+
+  return {
+    ...definition,
+
+    // Defensively ensure that the handler has all the required methods,
+    // defaulting to throwing a not implemented error if some methods are missing.
+    start: handler.start.bind(handler),
+    getInfo: handler.getInfo?.bind(handler) ?? notImplemented,
+    getResult: handler.getResult?.bind(handler) ?? notImplemented,
+    cancel: handler.cancel?.bind(handler) ?? notImplemented,
+  };
+}
+
+/**
+ * A compiled operation handler is a single object that is both an operation definition and a
+ * full-fledged operation handler for that operation.
+ *
+ * @hidden
+ * @internal
+ * @experimental
+ */
+export type CompiledOperationHandler<I, O> = OperationDefinition<I, O> & OperationHandler<I, O>;
+
+/**
+ * @internal
+ * @hidden
+ */
+export type CompiledOperationHandlerFor<Ops extends OperationMap> = CompiledOperationHandler<
+  OperationInput<Ops[OperationKey<Ops>]>,
+  OperationOutput<Ops[OperationKey<Ops>]>
+>;
+
+/**
+ * @internal
+ * @hidden
+ */
+function notImplemented(): never {
+  throw new HandlerError("NOT_IMPLEMENTED", "Not implemented");
+}

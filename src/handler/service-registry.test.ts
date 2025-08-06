@@ -7,8 +7,8 @@ const myService = nexus.service("service name", {
   fullOp: nexus.operation<number, number>({ name: "custom name" }),
 });
 
-const myServiceHandler = nexus.serviceHandler(myService, {
-  async syncOp(_ctx, input) {
+const myServiceOpsHandler: nexus.ServiceHandlerFor<(typeof myService)["operations"]> = {
+  syncOp: async (_ctx, input) => {
     return input;
   },
   fullOp: {
@@ -25,39 +25,13 @@ const myServiceHandler = nexus.serviceHandler(myService, {
       return 3;
     },
   },
-});
+} as const;
 
-describe("serviceHandler", () => {
-  class MyServiceHandler implements nexus.ServiceHandlerFor<(typeof myService)["operations"]> {
-    async syncOp(_ctx: nexus.StartOperationContext, input: string): Promise<string> {
-      return input;
-    }
-    fullOp: nexus.OperationHandler<number, number> = {
-      async start(_ctx, input) {
-        return nexus.HandlerStartOperationResult.sync(input);
-      },
-      async cancel(_ctx, _token) {
-        //
-      },
-      async getInfo(_ctx, token) {
-        return { token, state: "running" };
-      },
-      async getResult(_ctx, _token) {
-        return 3;
-      },
-    };
-  }
-
-  it("works with a class", () => {
-    const handler = new MyServiceHandler();
-    const serviceHandler = nexus.serviceHandler(myService, handler);
-    assert.equal(serviceHandler.operations.syncOp.name, "syncOp");
-    assert.equal(serviceHandler.operations.fullOp.name, "custom name");
-  });
-});
+const myServiceHandler = nexus.serviceHandler(myService, myServiceOpsHandler);
 
 describe("ServiceRegistry", () => {
-  const registry = new nexus.ServiceRegistry([myServiceHandler]);
+  const registry = nexus.ServiceRegistry.create([myServiceHandler]);
+
   const mkStartCtx = (service: string, operation: string): nexus.StartOperationContext => ({
     service,
     operation,
@@ -70,37 +44,37 @@ describe("ServiceRegistry", () => {
 
   it("throws when trying to register a duplicate service handler", () => {
     assert.throws(
-      () => new nexus.ServiceRegistry([myServiceHandler, myServiceHandler]),
-      /TypeError: Duplicate registration of nexus service service name/,
+      () => nexus.ServiceRegistry.create([myServiceHandler, myServiceHandler]),
+      /TypeError: Duplicate registration of nexus service 'service name'/,
     );
   });
 
-  it("throws when registering a duplicate operation", () => {
-    const handler = {
-      ...myServiceHandler,
-      operations: { ...myServiceHandler.operations, syncOpAlias: { name: "syncOp" } },
-    };
+  it("throws when registering a service with some missing operation handlers", () => {
     assert.throws(
-      () => new nexus.ServiceRegistry([handler as any]), // TS rejects this, but we want to test the runtime error.
-      /TypeError: Operation with name syncOp already registered for service service name/,
+      () =>
+        nexus.serviceHandler(myService, {
+          syncOp: myServiceOpsHandler.syncOp,
+          // Intentionally missing 'fullOp'
+        } as any),
+      /TypeError: No handler registered for operation 'custom name'/,
     );
   });
 
   it("throws when registering missing a operation handler", () => {
-    const handler = {
-      ...myServiceHandler,
-      handlers: { syncOp: {} },
-    };
     assert.throws(
-      () => new nexus.ServiceRegistry([handler as any]), // TS rejects this, but we want to test the runtime error.
-      /TypeError: No handler registered for fullOp on service service name/,
+      () =>
+        nexus.serviceHandler(myService, {
+          ...myServiceOpsHandler,
+          syncOp: {} as any,
+        }),
+      /TypeError: Handler for operation 'syncOp' has no start method/,
     );
   });
 
   it("throws a not found error if a service or operation is not registered", async () => {
     await assert.rejects(
       () => registry.start(mkStartCtx("non existing service", "dontCare"), createLazyValue("test")),
-      /HandlerError: Service handler not registered/,
+      /HandlerError: No service handler registered for service name 'non existing service'/,
     );
 
     await assert.rejects(
