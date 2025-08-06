@@ -30,8 +30,8 @@ const myServiceOpsHandler: nexus.ServiceHandlerFor<(typeof myService)["operation
 
 const myServiceHandler = nexus.serviceHandler(myService, myServiceOpsHandler);
 
-describe("ServiceRegistry", () => {
-  const registry = nexus.ServiceRegistry.create({
+describe("RootHandler", () => {
+  const rootHandler = nexus.RootHandler.create({
     services: [myServiceHandler],
   });
 
@@ -48,7 +48,7 @@ describe("ServiceRegistry", () => {
   it("throws when trying to register a duplicate service handler", () => {
     assert.throws(
       () =>
-        nexus.ServiceRegistry.create({
+        nexus.RootHandler.create({
           services: [myServiceHandler, myServiceHandler],
         }),
       /TypeError: Duplicate registration of nexus service 'service name'/,
@@ -79,23 +79,24 @@ describe("ServiceRegistry", () => {
 
   it("throws a not found error if a service or operation is not registered", async () => {
     await assert.rejects(
-      () => registry.start(mkStartCtx("non existing service", "dontCare"), createLazyValue("test")),
+      () =>
+        rootHandler.start(mkStartCtx("non existing service", "dontCare"), createLazyValue("test")),
       /HandlerError: No service handler registered for service name 'non existing service'/,
     );
 
     await assert.rejects(
-      () => registry.start(mkStartCtx("service name", "notFound"), createLazyValue("test")),
+      () => rootHandler.start(mkStartCtx("service name", "notFound"), createLazyValue("test")),
       /HandlerError: Operation handler not registered/,
     );
   });
 
   it("routes start to the correct handler", async () => {
     assertResultEqual(
-      await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")),
+      await rootHandler.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")),
       nexus.HandlerStartOperationResult.sync(createLazyValue("test")),
     );
     assertResultEqual(
-      await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
+      await rootHandler.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
       nexus.HandlerStartOperationResult.sync(createLazyValue(1)),
     );
   });
@@ -108,9 +109,9 @@ describe("ServiceRegistry", () => {
       headers: {},
       timeoutMs: 0,
     };
-    assert.rejects(() => registry.getResult(ctx, "token"), /HandlerError: Not implemented/);
+    assert.rejects(() => rootHandler.getResult(ctx, "token"), /HandlerError: Not implemented/);
     ctx.operation = "custom name";
-    assertLazyValueEqual(await registry.getResult(ctx, "token"), createLazyValue(3));
+    assertLazyValueEqual(await rootHandler.getResult(ctx, "token"), createLazyValue(3));
   });
 
   it("routes getInfo to the correct handler", async () => {
@@ -120,9 +121,9 @@ describe("ServiceRegistry", () => {
       abortSignal: new AbortController().signal,
       headers: {},
     };
-    assert.rejects(() => registry.getInfo(ctx, "token"), /HandlerError: Not implemented/);
+    assert.rejects(() => rootHandler.getInfo(ctx, "token"), /HandlerError: Not implemented/);
     ctx.operation = "custom name";
-    assert.deepEqual(await registry.getInfo(ctx, "token"), {
+    assert.deepEqual(await rootHandler.getInfo(ctx, "token"), {
       token: "token",
       state: "running",
     });
@@ -135,9 +136,9 @@ describe("ServiceRegistry", () => {
       abortSignal: new AbortController().signal,
       headers: {},
     };
-    assert.rejects(() => registry.cancel(ctx, "token"), /HandlerError: Not implemented/);
+    assert.rejects(() => rootHandler.cancel(ctx, "token"), /HandlerError: Not implemented/);
     ctx.operation = "custom name";
-    assert.equal(await registry.cancel(ctx, "token"), undefined);
+    assert.equal(await rootHandler.cancel(ctx, "token"), undefined);
   });
 });
 
