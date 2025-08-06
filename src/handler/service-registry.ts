@@ -59,10 +59,10 @@ export class ServiceRegistry {
     return serviceHandler.getOperationHandler(operation);
   }
 
-  public async start(
+  async start(
     ctx: StartOperationContext,
     lv: LazyValue,
-  ): Promise<HandlerStartOperationResult<LazyValue>> {
+  ): Promise<HandlerStartOperationResult<any>> {
     const handler = this.getOperationHandler(ctx);
     const input = await lv.consume<any>();
     return await handler.start(ctx, input);
@@ -72,7 +72,7 @@ export class ServiceRegistry {
     return await this.getOperationHandler(ctx).getInfo(ctx, token);
   }
 
-  async getResult(ctx: GetOperationResultContext, token: string): Promise<LazyValue> {
+  async getResult(ctx: GetOperationResultContext, token: string): Promise<any> {
     return await this.getOperationHandler(ctx).getResult(ctx, token);
   }
 
