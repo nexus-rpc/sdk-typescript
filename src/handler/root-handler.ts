@@ -11,6 +11,7 @@ import {
 import { ServiceHandler } from "./service-handler";
 import { CompiledOperationHandlerFor } from "./operation-handler";
 import { defaultSerializers } from "../serialization/serializers";
+import { composeMiddlewares, OperationMiddleware } from "./middleware";
 
 /**
  * The root Nexus handler, which dispatches Nexus requests to a collection of registered service
@@ -38,8 +39,9 @@ export class RootHandler {
     }
 
     const serializer = options.serializer ?? defaultSerializers;
+    const middlewares = options.middlewares ?? [];
 
-    return new RootHandler(serviceMap, serializer);
+    return new RootHandler(serviceMap, serializer, middlewares);
   }
 
   private constructor(
@@ -52,6 +54,11 @@ export class RootHandler {
      * The serializer to use for the handler.
      */
     private readonly serializer: Serializer,
+
+    /**
+     * FIXME
+     */
+    public readonly middlewares: OperationMiddleware[],
   ) {}
 
   private getOperationHandler(ctx: OperationContext): CompiledOperationHandlerFor<any> {
@@ -74,28 +81,35 @@ export class RootHandler {
     const inputContent = await input.consume();
     const inputValue = this.serializer.deserialize(inputContent, handler.inputTypeHint);
 
-    let result = await handler.start(ctx, inputValue);
-    if (!result.isAsync) {
-      const outputContent = this.serializer.serialize(result.value, handler.outputTypeHint);
-      result = HandlerStartOperationResult.sync(LazyValue.fromContent(outputContent));
-    }
+    const start = composeMiddlewares(this.middlewares, "start", handler.start);
+    const result = await start(ctx, inputValue);
 
-    return result;
+    if (result.isAsync) {
+      return result;
+    } else {
+      const outputContent = this.serializer.serialize(result.value, handler.outputTypeHint);
+      return HandlerStartOperationResult.sync(LazyValue.fromContent(outputContent));
+    }
   }
 
   async getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo> {
-    return await this.getOperationHandler(ctx).getInfo(ctx, token);
+    const handler = this.getOperationHandler(ctx);
+    const getInfo = composeMiddlewares(this.middlewares, "getInfo", handler.getInfo);
+    return await getInfo(ctx, token);
   }
 
   async getResult(ctx: GetOperationResultContext, token: string): Promise<LazyValue> {
     const handler = this.getOperationHandler(ctx);
-    const result = await handler.getResult(ctx, token);
-
-    return LazyValue.fromContent(this.serializer.serialize(result, handler.outputTypeHint));
+    const getResult = composeMiddlewares(this.middlewares, "getResult", handler.getResult);
+    const result = await getResult(ctx, token);
+    const resultContent = this.serializer.serialize(result, handler.outputTypeHint);
+    return LazyValue.fromContent(resultContent);
   }
 
   async cancel(ctx: CancelOperationContext, token: string): Promise<void> {
-    return await this.getOperationHandler(ctx).cancel(ctx, token);
+    const handler = this.getOperationHandler(ctx);
+    const cancel = composeMiddlewares(this.middlewares, "cancel", handler.cancel);
+    return await cancel(ctx, token);
   }
 }
 
@@ -112,4 +126,9 @@ export interface RootHandlerOptions {
    * The serializer to use for the handler. If not provided, the default serializer will be used.
    */
   serializer?: Serializer;
+
+  /**
+   * FIXME
+   */
+  middlewares?: OperationMiddleware[];
 }
