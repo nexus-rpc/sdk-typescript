@@ -10,7 +10,7 @@ export async function serviceClientTypeCheck(c: ServiceClient<typeof myService>)
   // sync vs. async result
   {
     const res = await c.startOperation("myOp", "bar");
-    if (res.isSync) {
+    if (res.type === "sync") {
       const _r: string = res.result;
       const _l: Link[] = res.links;
     } else {
@@ -26,9 +26,9 @@ export async function serviceClientTypeCheck(c: ServiceClient<typeof myService>)
   {
     let handle = c.getOperationHandle("myOp", "token");
     handle = c.getOperationHandle(myService.operations.myOp, "token");
-    const _i: OperationInfo = await handle.getInfo();
-    const _r: string = await handle.getResult();
-    const res = await handle.getResultWithDetails();
+    const _i: OperationInfo = await handle.fetchInfo();
+    const _r: string = await handle.fetchResult();
+    const res = await handle.fetchResultWithDetails();
     const _l: Link[] = res.links;
     const _r2: string = res.result;
   }

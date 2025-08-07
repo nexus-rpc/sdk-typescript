@@ -43,7 +43,7 @@ interface CancelOperationOptions {
   readonly abortSignal?: AbortSignal;
 }
 
-interface GetOperationResultOptions {
+interface FetchOperationResultOptions {
   /** Request header fields. */
   readonly headers?: Record<string, string>;
 
@@ -59,7 +59,7 @@ interface GetOperationResultOptions {
   readonly timeoutMs?: number;
 }
 
-interface GetOperationInfoOptions {
+interface FetchOperationInfoOptions {
   /** Request header fields. */
   readonly headers?: Record<string, string>;
 
@@ -79,26 +79,34 @@ export interface CompletionOperationOptions {
   readonly headers?: Record<string, string>;
 }
 
-export interface ClientStartOperationResultSync<T> {
+export interface ClientStartOperationResponseSync<T> {
   type: "sync";
   readonly links: Link[];
   readonly result: T;
 }
-export interface ClientStartOperationResultAsync<T> {
+export interface ClientStartOperationResponseAsync<T> {
   type: "async";
   readonly links: Link[];
   readonly handle: OperationHandle<T>;
 }
 
-export type ClientStartOperationResult<T> =
-  | ClientStartOperationResultSync<T>
-  | ClientStartOperationResultAsync<T>;
+export type ClientStartOperationResponse<T> =
+  | ClientStartOperationResponseSync<T>
+  | ClientStartOperationResponseAsync<T>;
 
 export class ServiceClient<T extends Service> {
+  public readonly service: string;
+
   constructor(
-    public readonly service: string,
+    service: T | string,
     private readonly transport: Transport,
-  ) {}
+  ) {
+    if (typeof service === "string") {
+      this.service = service;
+    } else {
+      this.service = service.name;
+    }
+  }
 
   executeOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
@@ -118,26 +126,26 @@ export class ServiceClient<T extends Service> {
     if (result.type === "sync") {
       return result.result;
     }
-    return await result.handle.getResult({ timeoutMs });
+    return await result.handle.fetchResult({ timeoutMs });
   }
 
   startOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
     input: OperationInput<O>,
     options?: StartOperationOptions,
-  ): Promise<ClientStartOperationResult<OperationOutput<O>>>;
+  ): Promise<ClientStartOperationResponse<OperationOutput<O>>>;
 
   startOperation<K extends OperationKey<T["operations"]>>(
     op: K,
     input: OperationInput<T["operations"][K]>,
     options?: StartOperationOptions,
-  ): Promise<ClientStartOperationResult<OperationOutput<T["operations"][K]>>>;
+  ): Promise<ClientStartOperationResponse<OperationOutput<T["operations"][K]>>>;
 
   async startOperation(
     op: any,
     input: any,
     options?: StartOperationOptions,
-  ): Promise<ClientStartOperationResult<any>> {
+  ): Promise<ClientStartOperationResponse<any>> {
     const opName = getOpName(op);
     const response = await this.transport.startOperation(
       this.service,
@@ -182,13 +190,13 @@ export class OperationHandle<T> {
     private readonly transport: Transport,
   ) {}
 
-  async getResult(options?: GetOperationResultOptions): Promise<T> {
-    const { result } = await this.getResultWithDetails(options);
+  async fetchResult(options?: FetchOperationResultOptions): Promise<T> {
+    const { result } = await this.fetchResultWithDetails(options);
     return result;
   }
 
-  async getResultWithDetails(
-    options?: GetOperationResultOptions,
+  async fetchResultWithDetails(
+    options?: FetchOperationResultOptions,
   ): Promise<ClientResultWithDetails<T>> {
     const { links, result } = await this.transport.getOperationResult(
       this.service,
@@ -201,7 +209,7 @@ export class OperationHandle<T> {
       result: result as T,
     };
   }
-  async getInfo(options?: GetOperationInfoOptions): Promise<OperationInfo> {
+  async fetchInfo(options?: FetchOperationInfoOptions): Promise<OperationInfo> {
     const { info } = await this.transport.getOperationInfo(
       this.service,
       this.operation,
