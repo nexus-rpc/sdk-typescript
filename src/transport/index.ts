@@ -1,6 +1,6 @@
 // NOTE: this file should be exported separately as `nexus-rpc/transport` instead of the main `nexus-rpc` export.
 
-import { Link, OperationInfo } from "../common";
+import { Link, OperationError, OperationInfo } from "../common";
 
 interface StartOperationOptions {
   /** Request header fields. */
@@ -68,13 +68,13 @@ interface GetOperationInfoOptions {
 }
 
 export interface StartOperationResponseSync {
-  isSync: true;
+  type: "sync";
   readonly links: Link[];
   readonly result: unknown;
 }
 
 export interface StartOperationResponseAsync {
-  isSync: false;
+  type: "async";
   readonly links: Link[];
   token: string;
 }
@@ -90,8 +90,29 @@ export interface GetOperationInfoResponse {
   info: OperationInfo;
 }
 
-export interface CancelOperationResponse {
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CancelOperationResponse {}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CompleteOperationResponse {}
+
+export interface CompletionOperationOptionsBase {
+  headers?: Record<string, string>;
 }
+
+export interface CompletionOperationOptionsSuccessful extends CompletionOperationOptionsBase {
+  // Result of a successful operation. Mutually exclusive with Error
+  result: any;
+}
+
+export interface CompletionOperationOptionsUnsuccessful extends CompletionOperationOptionsBase {
+  // Error returned by an unsuccessful operation.
+  error: OperationError;
+}
+
+export type CompletionOperationOptions =
+  | CompletionOperationOptionsSuccessful
+  | CompletionOperationOptionsUnsuccessful;
 
 export interface Transport {
   startOperation(
@@ -112,13 +133,18 @@ export interface Transport {
     service: string,
     op: string,
     token: string,
-    options: GetOperationInfoOptions
+    options: GetOperationInfoOptions,
   ): Promise<GetOperationInfoResponse>;
 
   cancelOperation(
     service: string,
     op: string,
     token: string,
-    options: CancelOperationOptions
+    options: CancelOperationOptions,
   ): Promise<CancelOperationResponse>;
+
+  completeOperation(
+    url: string,
+    opts: CompletionOperationOptions,
+  ): Promise<CompleteOperationResponse>;
 }

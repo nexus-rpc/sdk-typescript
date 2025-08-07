@@ -1,4 +1,4 @@
-import { Link, OperationInfo } from "./common";
+import { Link, OperationError, OperationInfo } from "./common";
 import { Service, OperationKey, OperationInput, OperationOutput } from "./operation";
 import { Transport } from "./transport";
 
@@ -74,25 +74,31 @@ export interface ExecuteOperationOptions extends StartOperationOptions {
   readonly timeoutMs?: number | undefined;
 }
 
+export interface CompletionOperationOptions {
+  /** Result of the operation to complete. */
+  readonly headers?: Record<string, string>;
+}
+
 export interface ClientStartOperationResultSync<T> {
-  isSync: true;
+  type: "sync";
   readonly links: Link[];
   readonly result: T;
 }
 export interface ClientStartOperationResultAsync<T> {
-  isSync: false;
+  type: "async";
   readonly links: Link[];
   readonly handle: OperationHandle<T>;
 }
 
-export type ClientStartOperationResult<T> = ClientStartOperationResultSync<T> | ClientStartOperationResultAsync<T>;
+export type ClientStartOperationResult<T> =
+  | ClientStartOperationResultSync<T>
+  | ClientStartOperationResultAsync<T>;
 
 export class ServiceClient<T extends Service> {
   constructor(
     public readonly service: string,
     private readonly transport: Transport,
-  ) {
-  }
+  ) {}
 
   executeOperation<O extends T["operations"][keyof T["operations"]]>(
     op: O,
@@ -106,14 +112,10 @@ export class ServiceClient<T extends Service> {
     options?: ExecuteOperationOptions,
   ): Promise<OperationOutput<T["operations"][K]>>;
 
-  async executeOperation(
-    op: any,
-    input: any,
-    options?: ExecuteOperationOptions,
-  ): Promise<any> {
+  async executeOperation(op: any, input: any, options?: ExecuteOperationOptions): Promise<any> {
     const { timeoutMs, ...startOptions } = options ?? {};
     const result = await this.startOperation(op, input, startOptions);
-    if (result.isSync) {
+    if (result.type === "sync") {
       return result.result;
     }
     return await result.handle.getResult({ timeoutMs });
@@ -136,24 +138,24 @@ export class ServiceClient<T extends Service> {
     input: any,
     options?: StartOperationOptions,
   ): Promise<ClientStartOperationResult<any>> {
-    const opName = getOpName(op)
-    const response = await this.transport.startOperation(this.service, opName, input, options ?? {});
-    if (response.isSync) {
+    const opName = getOpName(op);
+    const response = await this.transport.startOperation(
+      this.service,
+      opName,
+      input,
+      options ?? {},
+    );
+    if (response.type === "sync") {
       return {
-        isSync: true,
+        type: "sync",
         links: response.links,
         result: response.result,
       };
     }
     return {
-      isSync: false,
+      type: "async",
       links: response.links,
-      handle: new OperationHandle(
-        this.service,
-        opName,
-        response.token,
-        this.transport,
-      ),
+      handle: new OperationHandle(this.service, opName, response.token, this.transport),
     };
   }
 
@@ -167,16 +169,8 @@ export class ServiceClient<T extends Service> {
     token: string,
   ): OperationHandle<OperationOutput<T["operations"][K]>>;
 
-  getOperationHandle(
-    op: any,
-    token: string,
-  ): OperationHandle<OperationOutput<any>> {
-    return new OperationHandle<any>(
-      this.service,
-      getOpName(op),
-      token,
-      this.transport,
-    );
+  getOperationHandle(op: any, token: string): OperationHandle<OperationOutput<any>> {
+    return new OperationHandle<any>(this.service, getOpName(op), token, this.transport);
   }
 }
 
@@ -193,7 +187,9 @@ export class OperationHandle<T> {
     return result;
   }
 
-  async getResultWithDetails(options?: GetOperationResultOptions): Promise<ClientResultWithDetails<T>> {
+  async getResultWithDetails(
+    options?: GetOperationResultOptions,
+  ): Promise<ClientResultWithDetails<T>> {
     const { links, result } = await this.transport.getOperationResult(
       this.service,
       this.operation,
@@ -216,12 +212,7 @@ export class OperationHandle<T> {
   }
 
   async cancel(options?: CancelOperationOptions): Promise<void> {
-    await this.transport.cancelOperation(
-      this.service,
-      this.operation,
-      this.token,
-      options ?? {},
-    );
+    await this.transport.cancelOperation(this.service, this.operation, this.token, options ?? {});
   }
 }
 
@@ -231,10 +222,34 @@ export interface ClientResultWithDetails<T> {
 }
 
 function getOpName(op: any): string {
-    if (typeof op === "object" && Object.hasOwnProperty.call(op, "name") && typeof op.name === "string") {
+  if (
+    typeof op === "object" &&
+    Object.hasOwnProperty.call(op, "name") &&
+    typeof op.name === "string"
+  ) {
     return op.name;
-    } else if (typeof op === "string") {
+  } else if (typeof op === "string") {
     return op;
-    }
-    throw new TypeError('invalid operation');
+  }
+  throw new TypeError("invalid operation");
+}
+
+export class CompletionClient {
+  constructor(private readonly transport: Transport) {}
+
+  async succeedOperation(
+    url: string,
+    result: unknown,
+    opts: CompletionOperationOptions,
+  ): Promise<void> {
+    await this.transport.completeOperation(url, { ...opts, result });
+  }
+
+  async failOperation(
+    url: string,
+    error: OperationError,
+    opts: CompletionOperationOptions,
+  ): Promise<void> {
+    await this.transport.completeOperation(url, { ...opts, error });
+  }
 }
