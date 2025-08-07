@@ -19,7 +19,7 @@ export {
 } from "./operation-handler";
 
 export {
-  type ServiceHandler,
+  ServiceHandler,
   serviceHandler,
   type OperationHandlerFor,
   type ServiceHandlerFor,
