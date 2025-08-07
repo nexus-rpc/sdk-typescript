@@ -44,7 +44,7 @@ export class ServiceRegistry {
     /**
      * Registered service handlers to which this registry dispatches requests.
      */
-    public readonly services = new Map<string, ServiceHandler>(),
+    private readonly services = new Map<string, ServiceHandler>(),
   ) {}
 
   private getOperationHandler(ctx: OperationContext): CompiledOperationHandlerFor<any> {

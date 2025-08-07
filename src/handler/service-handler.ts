@@ -22,9 +22,10 @@ export class ServiceHandler<Ops extends OperationMap = OperationMap> {
    * @param handlers The collection of handlers
    * @returns The compiled service handler
    *
-   * @experimental
+   * @internal
+   * @hidden
    */
-  public static build<Ops extends OperationMap>(
+  static build<Ops extends OperationMap>(
     service: ServiceDefinition<Ops>,
     handlers: ServiceHandlerFor<Ops>,
   ): ServiceHandler<Ops> {
