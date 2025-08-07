@@ -25,4 +25,4 @@ export {
   type ServiceHandlerFor,
 } from "./service-handler";
 
-export { ServiceRegistry } from "./service-registry";
+export { RootHandler } from "./root-handler";

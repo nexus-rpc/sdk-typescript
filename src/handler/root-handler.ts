@@ -18,13 +18,13 @@ import { defaultSerializers } from "../serialization/serializers";
  *
  * @experimental
  */
-export class ServiceRegistry {
+export class RootHandler {
   /**
-   * Constructs a new {@link ServiceRegistry}.
+   * Constructs a new {@link RootHandler}.
    *
    * @experimental
    */
-  public static create(options: ServiceRegistryOptions) {
+  public static create(options: RootHandlerOptions) {
     const serviceMap = new Map<string, ServiceHandler>();
     for (const s of options.services) {
       const name = s.definition.name;
@@ -39,17 +39,17 @@ export class ServiceRegistry {
 
     const serializer = options.serializer ?? defaultSerializers;
 
-    return new ServiceRegistry(serviceMap, serializer);
+    return new RootHandler(serviceMap, serializer);
   }
 
   private constructor(
     /**
-     * Registered service handlers to which this registry dispatches requests.
+     * Registered service handlers to which this handler dispatches requests.
      */
     private readonly services = new Map<string, ServiceHandler>(),
 
     /**
-     * The serializer to use for the registry.
+     * The serializer to use for the handler.
      */
     private readonly serializer: Serializer,
   ) {}
@@ -102,14 +102,14 @@ export class ServiceRegistry {
 /**
  * @experimental
  */
-export interface ServiceRegistryOptions {
+export interface RootHandlerOptions {
   /**
-   * The services to register with the registry.
+   * The services to register.
    */
   services: ServiceHandler<any>[];
 
   /**
-   * The serializer to use for the registry. If not provided, the default serializer will be used.
+   * The serializer to use for the handler. If not provided, the default serializer will be used.
    */
   serializer?: Serializer;
 }
