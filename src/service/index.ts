@@ -5,6 +5,7 @@ export {
   type OperationInput,
   type OperationOutput,
   type OperationKey,
+  validateServiceDefinition,
 } from "./service-definition";
 
 export {

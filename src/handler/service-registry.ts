@@ -1,5 +1,5 @@
 import { HandlerError, OperationInfo } from "../common";
-import { LazyValue } from "../serialization";
+import { LazyValue, Serializer } from "../serialization";
 import { HandlerStartOperationResult } from "./start-operation-result";
 import {
   OperationContext,
@@ -10,10 +10,11 @@ import {
 } from "./operation-context";
 import { ServiceHandler } from "./service-handler";
 import { CompiledOperationHandlerFor } from "./operation-handler";
+import { defaultSerializers } from "../serialization/serializers";
 
 /**
  * The root Nexus handler, which dispatches Nexus requests to a collection of registered service
- * implementations.
+ * implementations, applying the configured serializer on inputs and outputs.
  *
  * @experimental
  */
@@ -23,10 +24,9 @@ export class ServiceRegistry {
    *
    * @experimental
    */
-  public static create(services: ServiceHandler<any>[]) {
+  public static create(options: ServiceRegistryOptions) {
     const serviceMap = new Map<string, ServiceHandler>();
-
-    for (const s of services) {
+    for (const s of options.services) {
       const name = s.definition.name;
       if (!name) {
         throw new TypeError("Tried to register a Nexus service with no name");
@@ -37,7 +37,9 @@ export class ServiceRegistry {
       serviceMap.set(name, s);
     }
 
-    return new ServiceRegistry(serviceMap);
+    const serializer = options.serializer ?? defaultSerializers;
+
+    return new ServiceRegistry(serviceMap, serializer);
   }
 
   private constructor(
@@ -45,6 +47,11 @@ export class ServiceRegistry {
      * Registered service handlers to which this registry dispatches requests.
      */
     private readonly services = new Map<string, ServiceHandler>(),
+
+    /**
+     * The serializer to use for the registry.
+     */
+    private readonly serializer: Serializer,
   ) {}
 
   private getOperationHandler(ctx: OperationContext): CompiledOperationHandlerFor<any> {
@@ -61,22 +68,48 @@ export class ServiceRegistry {
 
   async start(
     ctx: StartOperationContext,
-    lv: LazyValue,
-  ): Promise<HandlerStartOperationResult<any>> {
+    input: LazyValue,
+  ): Promise<HandlerStartOperationResult<LazyValue>> {
     const handler = this.getOperationHandler(ctx);
-    const input = await lv.consume<any>();
-    return await handler.start(ctx, input);
+    const inputContent = await input.consume();
+    const inputValue = this.serializer.deserialize(inputContent, handler.inputTypeHint);
+
+    let result = await handler.start(ctx, inputValue);
+    if (!result.isAsync) {
+      const outputContent = this.serializer.serialize(result.value, handler.outputTypeHint);
+      result = HandlerStartOperationResult.sync(LazyValue.fromContent(outputContent));
+    }
+
+    return result;
   }
 
   async getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo> {
     return await this.getOperationHandler(ctx).getInfo(ctx, token);
   }
 
-  async getResult(ctx: GetOperationResultContext, token: string): Promise<any> {
-    return await this.getOperationHandler(ctx).getResult(ctx, token);
+  async getResult(ctx: GetOperationResultContext, token: string): Promise<LazyValue> {
+    const handler = this.getOperationHandler(ctx);
+    const result = await handler.getResult(ctx, token);
+
+    return LazyValue.fromContent(this.serializer.serialize(result, handler.outputTypeHint));
   }
 
   async cancel(ctx: CancelOperationContext, token: string): Promise<void> {
     return await this.getOperationHandler(ctx).cancel(ctx, token);
   }
+}
+
+/**
+ * @experimental
+ */
+export interface ServiceRegistryOptions {
+  /**
+   * The services to register with the registry.
+   */
+  services: ServiceHandler<any>[];
+
+  /**
+   * The serializer to use for the registry. If not provided, the default serializer will be used.
+   */
+  serializer?: Serializer;
 }

@@ -1,6 +1,3 @@
-export declare const inputBrand: unique symbol;
-export declare const outputBrand: unique symbol;
-
 /**
  * Definition of a Nexus service contract, including its name and operations.
  *
@@ -19,10 +16,63 @@ export interface ServiceDefinition<Ops extends OperationMap = OperationMap> {
  * @experimental
  */
 export interface OperationDefinition<I, O> {
+  /**
+   * The name of the operation.
+   */
   name: string;
+
+  /**
+   * A type hint that will be provided to the serializer when serializing and deserializing the
+   * input of this operation. It can be used for example, to indicate the expected JSON schema or
+   * Protobuf message type of the input.
+   *
+   * The nature of type hints depends on the serializer used. The default serializers provided by
+   * the Nexus RPC SDK do not expect nor use any type hints.
+   */
+  inputTypeHint?: unknown;
+
+  /**
+   * A type hint that will be provided to the serializer when serializing and deserializing the
+   * output of this operation. It can be used for example, to indicate the expected JSON schema or
+   * Protobuf message type of the output.
+   *
+   * The nature of type hints depends on the serializer used. The default serializers provided by
+   * the Nexus RPC SDK do not expect nor use any type hints.
+   */
+  outputTypeHint?: unknown;
+
+  /**
+   * @see {@link inputBrand}
+   * @internal
+   * @hidden
+   */
   [inputBrand]: I;
+
+  /**
+   * @see {@link outputBrand}
+   * @internal
+   * @hidden
+   */
   [outputBrand]: O;
 }
+
+/**
+ * A type marker used to preserve type safety on the input type of an operation.
+ * This really only exists at the type level. It is not used at runtime.
+ *
+ * @internal
+ * @hidden
+ */
+export declare const inputBrand: unique symbol;
+
+/**
+ * A type marker used to preserve type safety on the output type of an operation.
+ * This really only exists at the type level. It is not used at runtime.
+ *
+ * @internal
+ * @hidden
+ */
+export declare const outputBrand: unique symbol;
 
 /**
  * A named collection of operations, as defined by a {@link ServiceDefinition}.

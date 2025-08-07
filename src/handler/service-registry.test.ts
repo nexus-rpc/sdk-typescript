@@ -1,6 +1,7 @@
 import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import * as nexus from "../index";
+import { defaultSerializers } from "../serialization/serializers";
 
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
@@ -30,7 +31,9 @@ const myServiceOpsHandler: nexus.ServiceHandlerFor<(typeof myService)["operation
 const myServiceHandler = nexus.serviceHandler(myService, myServiceOpsHandler);
 
 describe("ServiceRegistry", () => {
-  const registry = nexus.ServiceRegistry.create([myServiceHandler]);
+  const registry = nexus.ServiceRegistry.create({
+    services: [myServiceHandler],
+  });
 
   const mkStartCtx = (service: string, operation: string): nexus.StartOperationContext => ({
     service,
@@ -44,7 +47,10 @@ describe("ServiceRegistry", () => {
 
   it("throws when trying to register a duplicate service handler", () => {
     assert.throws(
-      () => nexus.ServiceRegistry.create([myServiceHandler, myServiceHandler]),
+      () =>
+        nexus.ServiceRegistry.create({
+          services: [myServiceHandler, myServiceHandler],
+        }),
       /TypeError: Duplicate registration of nexus service 'service name'/,
     );
   });
@@ -84,13 +90,13 @@ describe("ServiceRegistry", () => {
   });
 
   it("routes start to the correct handler", async () => {
-    assert.deepEqual(
+    assertResultEqual(
       await registry.start(mkStartCtx("service name", "syncOp"), createLazyValue("test")),
-      nexus.HandlerStartOperationResult.sync("test"),
+      nexus.HandlerStartOperationResult.sync(createLazyValue("test")),
     );
-    assert.deepEqual(
+    assertResultEqual(
       await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
-      nexus.HandlerStartOperationResult.sync(1),
+      nexus.HandlerStartOperationResult.sync(createLazyValue(1)),
     );
   });
 
@@ -104,7 +110,7 @@ describe("ServiceRegistry", () => {
     };
     assert.rejects(() => registry.getResult(ctx, "token"), /HandlerError: Not implemented/);
     ctx.operation = "custom name";
-    assert.equal(await registry.getResult(ctx, "token"), 3);
+    assertLazyValueEqual(await registry.getResult(ctx, "token"), createLazyValue(3));
   });
 
   it("routes getInfo to the correct handler", async () => {
@@ -136,15 +142,27 @@ describe("ServiceRegistry", () => {
 });
 
 function createLazyValue(value: unknown): nexus.LazyValue {
-  return new nexus.LazyValue(
-    {
-      deserialize() {
-        return value as any;
-      },
-      serialize() {
-        throw new Error("Not implemented");
-      },
-    },
-    {},
-  );
+  return nexus.LazyValue.fromContent(defaultSerializers.serialize(value));
+}
+
+async function assertResultEqual(
+  actual: nexus.HandlerStartOperationResult<nexus.LazyValue>,
+  expected: nexus.HandlerStartOperationResult<nexus.LazyValue>,
+) {
+  if (expected.isAsync && actual.isAsync) {
+    assert.equal(actual.token, expected.token);
+  } else if (!expected.isAsync && !actual.isAsync) {
+    await assertLazyValueEqual(actual.value, expected.value);
+  } else {
+    assert.fail(
+      `Expected ${expected.isAsync ? "async" : "sync"} result, but got ${actual.isAsync ? "async" : "sync"}`,
+    );
+  }
+}
+
+async function assertLazyValueEqual(actual: nexus.LazyValue, expected: nexus.LazyValue) {
+  const expectedContent = await expected.consume();
+  const actualContent = await actual.consume();
+
+  assert.deepEqual(actualContent, expectedContent);
 }

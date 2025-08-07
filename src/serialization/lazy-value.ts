@@ -1,5 +1,5 @@
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
-import { Serializer } from "./serializer";
+import { Content } from "./content";
 
 /**
  * A container for a value encoded in an underlying stream.
@@ -8,12 +8,24 @@ import { Serializer } from "./serializer";
  * @experimental
  */
 export class LazyValue {
+  public static fromContent(content: Content): LazyValue {
+    const stream = content.data
+      ? new ReadableStream({
+          start(controller) {
+            controller.enqueue(content.data);
+            controller.close();
+          },
+        })
+      : undefined;
+    return new LazyValue(content.headers, stream);
+  }
+
   /**
+   * Constructs a new LazyValue.
+   *
    * @experimental
    */
   constructor(
-    readonly serializer: Serializer,
-
     /**
      * Headers that should include information on how to process the stream's content.
      * Headers constructed by the framework always have lower case keys.
@@ -30,11 +42,11 @@ export class LazyValue {
   /**
    * Consume the underlying reader stream, deserializing via the embedded serializer.
    */
-  async consume<T = unknown>(): Promise<T> {
+  async consume(): Promise<Content> {
     if (this.stream == null) {
-      // Return a default value from the serializer.
-      return this.serializer.deserialize({ headers: this.headers });
+      return { headers: this.headers, data: undefined };
     }
+
     const reader = this.stream.getReader();
     const chunks = Array<Uint8Array>();
     let length = 0;
@@ -53,7 +65,7 @@ export class LazyValue {
       offset += chunk.length;
     }
 
-    return this.serializer.deserialize<T>({ headers: this.headers, data });
+    return { headers: this.headers, data };
   }
 }
 
