@@ -40,6 +40,7 @@ jobs:
           retention-days: 7
 
   deploy-docs:
+    if: github.repository == 'nexus-rpc/sdk-typescript' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.docs-deployment.outputs.page_url }}
