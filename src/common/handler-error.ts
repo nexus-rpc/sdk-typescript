@@ -78,12 +78,14 @@ export class HandlerError extends Error {
       case "UNAUTHORIZED":
       case "NOT_FOUND":
       case "NOT_IMPLEMENTED":
+      case "CONFLICT":
         return false;
 
       case "UNAVAILABLE":
       case "UPSTREAM_TIMEOUT":
       case "RESOURCE_EXHAUSTED":
       case "INTERNAL":
+      case "REQUEST_TIMEOUT":
         return true;
 
       default: {
@@ -150,6 +152,23 @@ export const HandlerErrorType = {
    * The requested resource could not be found but may be available in the future.
    */
   NOT_FOUND: "NOT_FOUND",
+
+  /**
+   * Returned by the server when it has given up handling a request. This may occur by enforcing
+   * a client provided `Request-Timeout` or for any arbitrary reason such as enforcing some
+   * configurable limit.
+   * 
+   * Subsequent requests by the client are permissible.
+   */
+  REQUEST_TIMEOUT: "REQUEST_TIMEOUT",
+
+  /**
+   * The request could not be made due to a conflict. This may happen when trying to create an
+   * operation that has already been started.
+   * 
+   * Clients should not retry this request unless advised otherwise.
+   */
+  CONFLICT: "CONFLICT",
 
   /**
    * Some resource has been exhausted, perhaps a per-user quota, or perhaps the entire file system
