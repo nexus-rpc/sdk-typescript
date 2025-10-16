@@ -82,26 +82,6 @@ export interface StartOperationContext extends OperationContext {
 }
 
 /**
- * Context for the {@link OperationHandler.getInfo} method.
- *
- * @experimental
- */
-export type GetOperationInfoContext = OperationContext;
-
-/**
- * Context for the {@link OperationHandler.getResult} method.
- *
- * @experimental
- */
-export interface GetOperationResultContext extends OperationContext {
-  /**
-   * If specified and non-zero, reflects the duration (in milliseconds) the caller has indicated
-   * that it wants to wait for operation completion, turning the request into a long poll.
-   */
-  readonly timeoutMs: number | undefined;
-}
-
-/**
  * Context for the {@link OperationHandler.cancel} method.
  *
  * @experimental

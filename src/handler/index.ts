@@ -1,8 +1,6 @@
 export {
   type OperationContext,
   type StartOperationContext,
-  type GetOperationInfoContext,
-  type GetOperationResultContext,
   type CancelOperationContext,
 } from "./operation-context";
 
