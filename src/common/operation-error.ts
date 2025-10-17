@@ -74,8 +74,6 @@ export interface OperationErrorOptions {
 /**
  * Describes state of an operation that did not complete successfully.
  *
- * This is a subset of {@link OperationState}.
- *
  * @experimental
  * @inline
  */

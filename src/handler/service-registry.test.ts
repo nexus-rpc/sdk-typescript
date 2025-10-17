@@ -18,12 +18,6 @@ const myServiceOpsHandler: nexus.ServiceHandlerFor<(typeof myService)["operation
     async cancel(_ctx, _token) {
       //
     },
-    async getInfo(_ctx, token) {
-      return { token, state: "running" };
-    },
-    async getResult(_ctx, _token) {
-      return 3;
-    },
   },
 } as const;
 
@@ -92,34 +86,6 @@ describe("ServiceRegistry", () => {
       await registry.start(mkStartCtx("service name", "custom name"), createLazyValue(1)),
       nexus.HandlerStartOperationResult.sync(1),
     );
-  });
-
-  it("routes getResult to the correct handler", async () => {
-    const ctx = {
-      service: "service name",
-      operation: "syncOp",
-      abortSignal: new AbortController().signal,
-      headers: {},
-      timeoutMs: 0,
-    };
-    assert.rejects(() => registry.getResult(ctx, "token"), /HandlerError: Not implemented/);
-    ctx.operation = "custom name";
-    assert.equal(await registry.getResult(ctx, "token"), 3);
-  });
-
-  it("routes getInfo to the correct handler", async () => {
-    const ctx = {
-      service: "service name",
-      operation: "syncOp",
-      abortSignal: new AbortController().signal,
-      headers: {},
-    };
-    assert.rejects(() => registry.getInfo(ctx, "token"), /HandlerError: Not implemented/);
-    ctx.operation = "custom name";
-    assert.deepEqual(await registry.getInfo(ctx, "token"), {
-      token: "token",
-      state: "running",
-    });
   });
 
   it("routes cancel to the correct handler", async () => {

@@ -1,11 +1,6 @@
-import { HandlerError, OperationInfo } from "../common";
+import { HandlerError } from "../common";
 import { HandlerStartOperationResult } from "./start-operation-result";
-import {
-  CancelOperationContext,
-  GetOperationInfoContext,
-  GetOperationResultContext,
-  StartOperationContext,
-} from "./operation-context";
+import { CancelOperationContext, StartOperationContext } from "./operation-context";
 import {
   OperationDefinition,
   OperationInput,
@@ -30,28 +25,6 @@ export interface OperationHandler<I, O> {
    * Throw an {@link OperationError} to indicate that an operation completed as failed or canceled.
    */
   start(ctx: StartOperationContext, input: I): Promise<HandlerStartOperationResult<O>>;
-
-  /**
-   * Handle requests to get information about an asynchronous operation.
-   */
-  getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo>;
-
-  /**
-   * Handle requests to get the result of an asynchronous operation. Return non error result to
-   * respond successfully inline, or throw an {@link OperationStillRunningError} to indicate that an
-   * asynchronous operation is still running.
-   *
-   * Throw an {@link OperationError} to indicate that an operation completed as failed or canceled.
-   *
-   * When {@link GetOperationResultContext.timeoutMs | timeoutMs} is greater than zero, this request
-   * should be treated as a long poll. Note that the specified wait duration may be longer than the
-   * configured client or server side request timeout, and should be handled separately.
-   *
-   * It is the implementor's responsibility to respect the client's timeout duration and return in a
-   * timely fashion, leaving enough time for the request to complete and the response to be sent
-   * back.
-   */
-  getResult(ctx: GetOperationResultContext, token: string): Promise<O>;
 
   /**
    * Handle requests to cancel an asynchronous operation.
@@ -99,8 +72,6 @@ export function compileOperationHandler<I, O>(
       start: async (ctx, input) => {
         return HandlerStartOperationResult.sync(await handler(ctx, input));
       },
-      getInfo: notImplemented,
-      getResult: notImplemented,
       cancel: notImplemented,
     };
   }
@@ -115,8 +86,6 @@ export function compileOperationHandler<I, O>(
     // Defensively ensure that the handler has all the required methods,
     // defaulting to throwing a not implemented error if some methods are missing.
     start: handler.start.bind(handler),
-    getInfo: handler.getInfo?.bind(handler) ?? notImplemented,
-    getResult: handler.getResult?.bind(handler) ?? notImplemented,
     cancel: handler.cancel?.bind(handler) ?? notImplemented,
   };
 }

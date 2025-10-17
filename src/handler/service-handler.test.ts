@@ -18,12 +18,6 @@ const myServiceOpsHandler: nexus.ServiceHandlerFor<(typeof myService)["operation
     async cancel(_ctx, _token) {
       //
     },
-    async getInfo(_ctx, token) {
-      return { token, state: "running" };
-    },
-    async getResult(_ctx, _token) {
-      return 3;
-    },
   },
 } as const;
 
@@ -38,12 +32,6 @@ describe("ServiceHandler", () => {
       },
       async cancel(_ctx, _token) {
         //
-      },
-      async getInfo(_ctx, token) {
-        return { token, state: "running" };
-      },
-      async getResult(_ctx, _token) {
-        return 3;
       },
     };
   }

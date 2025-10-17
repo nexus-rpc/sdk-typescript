@@ -1,11 +1,9 @@
-import { HandlerError, OperationInfo } from "../common";
+import { HandlerError } from "../common";
 import { LazyValue } from "../serialization";
 import { HandlerStartOperationResult } from "./start-operation-result";
-import {
+import type {
   OperationContext,
   StartOperationContext,
-  GetOperationResultContext,
-  GetOperationInfoContext,
   CancelOperationContext,
 } from "./operation-context";
 import { ServiceHandler } from "./service-handler";
@@ -66,14 +64,6 @@ export class ServiceRegistry {
     const handler = this.getOperationHandler(ctx);
     const input = await lv.consume<any>();
     return await handler.start(ctx, input);
-  }
-
-  async getInfo(ctx: GetOperationInfoContext, token: string): Promise<OperationInfo> {
-    return await this.getOperationHandler(ctx).getInfo(ctx, token);
-  }
-
-  async getResult(ctx: GetOperationResultContext, token: string): Promise<any> {
-    return await this.getOperationHandler(ctx).getResult(ctx, token);
   }
 
   async cancel(ctx: CancelOperationContext, token: string): Promise<void> {
