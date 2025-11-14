@@ -35,6 +35,14 @@ export interface OperationContext {
    * {@link OperationHandler.cancel} method.
    */
   readonly abortSignal: AbortSignal;
+
+  /**
+   * Get the deadline for the operation handler method.
+   *
+   * Note that this is the time by which the current _request_ should complete,
+   * not the _operation_'s deadline.
+   */
+  readonly requestDeadline?: Date;
 }
 
 /**
