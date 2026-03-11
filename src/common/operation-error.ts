@@ -79,12 +79,13 @@ export class OperationError extends Error {
    *
    * @experimental
    */
-  static fromWire(
+  static fromWire<T extends typeof OperationError>(
+    this: T,
     state: OperationErrorState,
     message?: string | undefined,
     options?: OperationErrorOptions,
-  ): OperationError {
-    return new OperationError(state, message, options);
+  ): InstanceType<T> {
+    return new this(state, message, options) as InstanceType<T>;
   }
 }
 
