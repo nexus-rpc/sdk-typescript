@@ -174,9 +174,9 @@ describe("HandlerError", () => {
     }
   });
 
-  it("fromWire uses raw type string in default message for unknown types", () => {
+  it("fromWire uses resolved type in default message for unknown types", () => {
     const error = HandlerError.fromWire("CUSTOM_TYPE");
-    assert.equal(error.message, "Handler error: CUSTOM_TYPE");
+    assert.equal(error.message, "Handler error: UNKNOWN");
   });
 
   it("fromWire resolves known types correctly", () => {
