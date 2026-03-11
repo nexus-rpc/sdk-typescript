@@ -105,7 +105,10 @@ describe("OperationError", () => {
     assert.equal(error.originalFailure, undefined);
 
     const failure: Failure = { message: "original" };
-    const error2 = new OperationError("failed", "test", { stackTrace: "at bar:2", originalFailure: failure });
+    const error2 = new OperationError("failed", "test", {
+      stackTrace: "at bar:2",
+      originalFailure: failure,
+    });
     assert.equal(error2.stack, "at bar:2");
     assert.deepEqual(error2.originalFailure, failure);
   });

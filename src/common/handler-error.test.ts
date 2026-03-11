@@ -155,7 +155,10 @@ describe("HandlerError", () => {
     assert.equal(error.originalFailure, undefined);
 
     const failure: Failure = { message: "original" };
-    const error2 = new HandlerError("INTERNAL", "test", { stackTrace: "at foo:1", originalFailure: failure });
+    const error2 = new HandlerError("INTERNAL", "test", {
+      stackTrace: "at foo:1",
+      originalFailure: failure,
+    });
     assert.equal(error2.stack, "at foo:1");
     assert.deepEqual(error2.originalFailure, failure);
   });

@@ -111,7 +111,11 @@ export class HandlerError extends Error {
    *
    * @experimental
    */
-  static fromWire(type: string, message?: string | undefined, options?: HandlerErrorOptions): HandlerError {
+  static fromWire(
+    type: string,
+    message?: string | undefined,
+    options?: HandlerErrorOptions,
+  ): HandlerError {
     const resolvedType = HANDLER_ERROR_TYPE_VALUES.has(type)
       ? (type as HandlerErrorType)
       : HandlerErrorType.UNKNOWN;
