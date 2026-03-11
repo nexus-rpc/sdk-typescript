@@ -111,20 +111,21 @@ export class HandlerError extends Error {
    *
    * @experimental
    */
-  static fromWire(
+  static fromWire<T extends typeof HandlerError>(
+    this: T,
     type: string,
     message?: string | undefined,
     options?: HandlerErrorOptions,
-  ): HandlerError {
+  ): InstanceType<T> {
     const resolvedType =
       type in HandlerErrorType
         ? HandlerErrorType[type as keyof typeof HandlerErrorType]
         : HandlerErrorType.UNKNOWN;
 
-    return new HandlerError(resolvedType, message, {
+    return new this(resolvedType, message, {
       ...options,
       rawErrorType: type,
-    });
+    }) as InstanceType<T>;
   }
 
   /**
