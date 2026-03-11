@@ -10,7 +10,7 @@ import type { Failure } from "./failure";
  * Example:
  *
  * ```ts
- *     import { HandlerError, HandlerErrorType } from "nexus-rpc";
+ *     import { HandlerError } from "nexus-rpc";
  *
  *     // Throw a bad request error
  *     throw new HandlerError("BAD_REQUEST", "Invalid input provided");
