@@ -116,7 +116,7 @@ export class HandlerError extends Error {
     message?: string | undefined,
     options?: HandlerErrorOptions,
   ): HandlerError {
-    const resolvedType = HANDLER_ERROR_TYPE_VALUES.has(type)
+    const resolvedType = type in HandlerErrorType
       ? (type as HandlerErrorType)
       : HandlerErrorType.UNKNOWN;
 
@@ -303,5 +303,3 @@ export const HandlerErrorType = {
    */
   UPSTREAM_TIMEOUT: "UPSTREAM_TIMEOUT",
 } as const;
-
-const HANDLER_ERROR_TYPE_VALUES: ReadonlySet<string> = new Set(Object.values(HandlerErrorType));
