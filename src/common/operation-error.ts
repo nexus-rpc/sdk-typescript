@@ -1,4 +1,5 @@
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
+import type { Failure } from "./failure";
 
 /**
  * A Nexus operation error.
@@ -35,6 +36,13 @@ export class OperationError extends Error {
   declare public readonly cause: Error;
 
   /**
+   * Set if this error was constructed from a {@link Failure} object.
+   *
+   * Preserves the original failure for round-tripping through the wire format.
+   */
+  public readonly originalFailure: Failure | undefined;
+
+  /**
    * Constructs a new {@link OperationError}.
    *
    * @param state - The state of the operation.
@@ -53,6 +61,30 @@ export class OperationError extends Error {
 
     super(actualMessage, { cause: options?.cause });
     this.state = state;
+    this.originalFailure = options?.originalFailure;
+    if (options?.stackTrace !== undefined) {
+      this.stack = options.stackTrace;
+    }
+  }
+
+  /**
+   * Constructs an {@link OperationError} from wire data.
+   *
+   * A semantic factory method that signals the error is being deserialized from a
+   * wire {@link Failure}, rather than being created by application code.
+   *
+   * @param state - The state of the operation.
+   * @param message - The message of the error.
+   * @param options - Extra options for the error, including wire-specific fields.
+   *
+   * @experimental
+   */
+  static fromWire(
+    state: OperationErrorState,
+    message?: string | undefined,
+    options?: OperationErrorOptions,
+  ): OperationError {
+    return new OperationError(state, message, options);
   }
 }
 
@@ -69,6 +101,22 @@ export interface OperationErrorOptions {
    * Underlying cause of the error.
    */
   cause?: Error | undefined;
+
+  /**
+   * An optional stack trace string associated with this error.
+   *
+   * When provided, this overrides the native `stack` property on the error.
+   * This is typically used for remote stack traces received over the wire,
+   * which may originate from a different language runtime.
+   */
+  stackTrace?: string;
+
+  /**
+   * An optional {@link Failure} object from which this error was constructed.
+   *
+   * Preserves the original failure for round-tripping through the wire format.
+   */
+  originalFailure?: Failure;
 }
 
 /**
@@ -78,3 +126,4 @@ export interface OperationErrorOptions {
  * @inline
  */
 export type OperationErrorState = "failed" | "canceled";
+
