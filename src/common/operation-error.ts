@@ -126,4 +126,3 @@ export interface OperationErrorOptions {
  * @inline
  */
 export type OperationErrorState = "failed" | "canceled";
-
