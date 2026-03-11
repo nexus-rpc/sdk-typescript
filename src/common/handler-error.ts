@@ -116,9 +116,8 @@ export class HandlerError extends Error {
     message?: string | undefined,
     options?: HandlerErrorOptions,
   ): HandlerError {
-    const resolvedType = type in HandlerErrorType
-      ? (type as HandlerErrorType)
-      : HandlerErrorType.UNKNOWN;
+    const resolvedType =
+      type in HandlerErrorType ? (type as HandlerErrorType) : HandlerErrorType.UNKNOWN;
 
     return new HandlerError(resolvedType, message, {
       ...options,
