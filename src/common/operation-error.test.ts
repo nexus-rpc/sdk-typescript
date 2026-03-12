@@ -81,23 +81,6 @@ describe("OperationError", () => {
     new OperationError("invalid", "x");
   });
 
-  it("fromWire accepts stackTrace and originalFailure options", () => {
-    const failure: Failure = { message: "original" };
-    const error = OperationError.fromWire("failed", "test", {
-      stackTrace: "at bar:2",
-      originalFailure: failure,
-    });
-    assert.equal(error.stack, "at bar:2");
-    assert.deepEqual(error.originalFailure, failure);
-  });
-
-  it("fromWire uses native stack trace when stackTrace option is not provided", () => {
-    const error = OperationError.fromWire("failed", "test");
-    assert.ok(error.stack);
-    assert.ok(error.stack.includes("OperationError"));
-    assert.equal(error.originalFailure, undefined);
-  });
-
   it("Constructor accepts stackTrace and originalFailure", () => {
     const error = new OperationError("failed", "test");
     assert.ok(error.stack);

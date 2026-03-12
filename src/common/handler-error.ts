@@ -21,14 +21,6 @@ import type { Failure } from "./failure";
  *     // Throw a retryable internal error
  *     throw new HandlerError("INTERNAL", "Database unavailable", { retryableOverride: true });
  *
- *     // Construct from a wire type (including unknown types)
- *     const error = HandlerError.fromWire("CUSTOM_TYPE", "Wire error", {
- *       stackTrace: "at foo:1\nat bar:2",
- *       originalFailure: { message: "original error" },
- *     });
- *     console.log(error.type);         // "UNKNOWN"
- *     console.log(error.rawErrorType); // "CUSTOM_TYPE"
- *     // The remote stack trace is accessible via the native `.stack` property.
  * ```
  *
  * @experimental
@@ -76,7 +68,6 @@ export class HandlerError extends Error {
    * Constructs a new {@link HandlerError}.
    *
    * @param type - The type of the error. Must be a known {@link HandlerErrorType}.
-   *   To construct from an arbitrary wire type string, use {@link HandlerError.fromWire}.
    * @param message - The message of the error.
    * @param options - Extra options for the error, including the cause and retryable override.
    *
@@ -88,44 +79,12 @@ export class HandlerError extends Error {
     super(actualMessage, { cause: options?.cause });
 
     this.type = type;
-    this.rawErrorType = options?.rawErrorType ?? type;
+    this.rawErrorType = type == "UNKNOWN" ? (options?.rawErrorType ?? type) : type;
     this.retryableOverride = options?.retryableOverride;
     this.originalFailure = options?.originalFailure;
     if (options?.stackTrace !== undefined) {
       this.stack = options.stackTrace;
     }
-  }
-
-  /**
-   * Constructs a {@link HandlerError} from an arbitrary wire type string.
-   *
-   * If the string matches a known {@link HandlerErrorType}, the error's {@link type} will be set
-   * to that value. Otherwise, {@link type} will be set to `"UNKNOWN"`.
-   * The original string is always preserved in {@link rawErrorType}.
-   *
-   * @param type - The error type string received over the wire.
-   * @param message - The message of the error.
-   * @param options - Extra options for the error, including wire-specific fields like
-   *   {@link HandlerErrorOptions.stackTrace | stackTrace} and
-   *   {@link HandlerErrorOptions.originalFailure | originalFailure}.
-   *
-   * @experimental
-   */
-  static fromWire<T extends typeof HandlerError>(
-    this: T,
-    type: string,
-    message?: string | undefined,
-    options?: HandlerErrorOptions,
-  ): InstanceType<T> {
-    const resolvedType =
-      type in HandlerErrorType
-        ? HandlerErrorType[type as keyof typeof HandlerErrorType]
-        : HandlerErrorType.UNKNOWN;
-
-    return new this(resolvedType, message, {
-      ...options,
-      rawErrorType: type,
-    }) as InstanceType<T>;
   }
 
   /**
@@ -206,9 +165,8 @@ export interface HandlerErrorOptions {
   /**
    * The original error type string, preserving the raw wire value.
    *
-   * For known types, this defaults to the {@link HandlerErrorType} value.
-   * For unknown types received via {@link HandlerError.fromWire}, this preserves
-   * the original wire string while the error's type is set to `"UNKNOWN"`.
+   * For known types, this option is ignored.
+   * When the error's type is set to `"UNKNOWN"`, this option is used to preserve the original wire string.
    */
   rawErrorType?: string;
 }

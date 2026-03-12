@@ -66,27 +66,6 @@ export class OperationError extends Error {
       this.stack = options.stackTrace;
     }
   }
-
-  /**
-   * Constructs an {@link OperationError} from wire data.
-   *
-   * A semantic factory method that signals the error is being deserialized from a
-   * wire {@link Failure}, rather than being created by application code.
-   *
-   * @param state - The state of the operation.
-   * @param message - The message of the error.
-   * @param options - Extra options for the error, including wire-specific fields.
-   *
-   * @experimental
-   */
-  static fromWire<T extends typeof OperationError>(
-    this: T,
-    state: OperationErrorState,
-    message?: string | undefined,
-    options?: OperationErrorOptions,
-  ): InstanceType<T> {
-    return new this(state, message, options) as InstanceType<T>;
-  }
 }
 
 injectSymbolBasedInstanceOf(OperationError, "OperationError");
