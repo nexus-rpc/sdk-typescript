@@ -37,7 +37,7 @@ export class HandlerError extends Error {
   public readonly type: HandlerErrorType;
 
   /**
-   * The original error type string passed to the constructor.
+   * The raw error type string.
    *
    * For known types, this equals {@link type}. For unknown types, this preserves
    * the original wire string while {@link type} is set to `"UNKNOWN"`.
@@ -55,14 +55,14 @@ export class HandlerError extends Error {
    *
    * @see {@link retryable}.
    */
-  public readonly retryableOverride: boolean | undefined;
+  public readonly retryableOverride?: boolean;
 
   /**
    * Set if this error was constructed from a {@link Failure} object.
    *
    * Preserves the original failure for round-tripping through the wire format.
    */
-  public readonly originalFailure: Failure | undefined;
+  public readonly originalFailure?: Failure;
 
   /**
    * Constructs a new {@link HandlerError}.

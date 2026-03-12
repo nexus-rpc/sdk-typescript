@@ -40,7 +40,7 @@ export class OperationError extends Error {
    *
    * Preserves the original failure for round-tripping through the wire format.
    */
-  public readonly originalFailure: Failure | undefined;
+  public readonly originalFailure?: Failure;
 
   /**
    * Constructs a new {@link OperationError}.
