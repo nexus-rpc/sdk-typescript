@@ -79,7 +79,7 @@ export class HandlerError extends Error {
     super(actualMessage, { cause: options?.cause });
 
     this.type = type;
-    this.rawErrorType = type == "UNKNOWN" ? (options?.rawErrorType ?? type) : type;
+    this.rawErrorType = type === "UNKNOWN" ? (options?.rawErrorType ?? type) : type;
     this.retryableOverride = options?.retryableOverride;
     this.originalFailure = options?.originalFailure;
     if (options?.stackTrace !== undefined) {
