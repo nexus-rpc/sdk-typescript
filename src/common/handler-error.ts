@@ -78,6 +78,9 @@ export class HandlerError extends Error {
 
     super(actualMessage, { cause: options?.cause });
 
+    if (!(type in HandlerErrorType)) {
+      throw new TypeError(`Invalid HandlerErrorType: ${type}`);
+    }
     this.type = type;
     this.rawErrorType = type === "UNKNOWN" ? (options?.rawErrorType ?? type) : type;
     this.retryableOverride = options?.retryableOverride;
