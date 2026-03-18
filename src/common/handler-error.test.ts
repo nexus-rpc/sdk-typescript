@@ -156,8 +156,11 @@ describe("HandlerError", () => {
     }
   });
 
-  it("Constructor rejects unknown type strings at compile time", () => {
-    // @ts-expect-error - Argument of type '"INVALID"' is not assignable to parameter of type 'HandlerErrorType'
-    new HandlerError("INVALID", "x");
+  it("Constructor rejects unknown type strings at runtime", () => {
+    assert.throws(
+      // @ts-expect-error - Argument of type '"INVALID"' is not assignable to parameter of type 'HandlerErrorType'
+      () => new HandlerError("INVALID", "x"),
+      TypeError,
+    );
   });
 });
