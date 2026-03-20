@@ -24,7 +24,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      
+
       # The node test runner changes behavior between node versions 20 & 24
       # 24 automatically reads typescript files and therefore test files must be specified
       #  to properly test the built JS
