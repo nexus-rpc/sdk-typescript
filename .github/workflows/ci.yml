@@ -24,7 +24,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - run: node --enable-source-maps --test lib/**/*.test.js
+      - run: pnpm test
 
       - run: pnpm run lint
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20

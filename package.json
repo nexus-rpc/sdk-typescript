@@ -23,7 +23,7 @@
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
     "build:docs": "typedoc src --plugin typedoc-github-theme",
-    "test": "node --enable-source-maps --test lib/**/*.test.js",
+    "test": "node --enable-source-maps --test lib/",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --check .",
