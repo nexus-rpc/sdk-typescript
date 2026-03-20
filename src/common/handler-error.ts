@@ -78,7 +78,7 @@ export class HandlerError extends Error {
 
     super(actualMessage, { cause: options?.cause });
 
-    if (!(type in HandlerErrorType)) {
+    if (!Object.hasOwn(HandlerErrorType, type)) {
       throw new TypeError(`Invalid HandlerErrorType: ${type}`);
     }
     this.type = type;
