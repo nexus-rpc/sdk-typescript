@@ -23,7 +23,7 @@
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
     "build:docs": "typedoc src --plugin typedoc-github-theme",
-    "test": "node --enable-source-maps --test lib/",
+    "test": "node --enable-source-maps --test lib/**/*.test.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --check .",
@@ -42,7 +42,7 @@
     "typescript-eslint": "^8.37.0"
   },
   "engines": {
-    "node": ">= 18.0.0"
+    "node": ">= 20.0.0"
   },
   "packageManager": "pnpm@10.27.0",
   "devEngines": {
