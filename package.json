@@ -20,11 +20,10 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "prepare": "npm run build",
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
     "build:docs": "typedoc src --plugin typedoc-github-theme",
-    "test": "node --test --enable-source-maps",
+    "test": "node --enable-source-maps --test lib/",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --check .",
@@ -33,7 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
-    "@types/node": "^18.0.0",
+    "@types/node": "^20.0.0",
     "eslint": "^9.31.0",
     "prettier": "^3.6.2",
     "shx": "^0.4.0",
@@ -43,7 +42,15 @@
     "typescript-eslint": "^8.37.0"
   },
   "engines": {
-    "node": ">= 18.0.0"
+    "node": ">= 20.0.0"
+  },
+  "packageManager": "pnpm@10.27.0",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "10.27.0",
+      "onFail": "warn"
+    }
   },
   "publishConfig": {
     "access": "public"
