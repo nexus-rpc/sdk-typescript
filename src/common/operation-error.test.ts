@@ -1,6 +1,7 @@
 import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import { OperationError } from "./index";
+import type { Failure } from "./index";
 
 describe("OperationError", () => {
   // Important: Keep these in sync with the sample code on the OperationError class typedoc.
@@ -78,5 +79,20 @@ describe("OperationError", () => {
 
     // @ts-expect-error - Argument ... is not assignable to type ...
     new OperationError("invalid", "x");
+  });
+
+  it("Constructor accepts stackTrace and originalFailure", () => {
+    const error = new OperationError("failed", "test");
+    assert.ok(error.stack);
+    assert.ok(error.stack.includes("OperationError"));
+    assert.equal(error.originalFailure, undefined);
+
+    const failure: Failure = { message: "original" };
+    const error2 = new OperationError("failed", "test", {
+      stackTrace: "at bar:2",
+      originalFailure: failure,
+    });
+    assert.equal(error2.stack, "at bar:2");
+    assert.deepEqual(error2.originalFailure, failure);
   });
 });

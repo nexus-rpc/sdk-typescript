@@ -1,4 +1,5 @@
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
+import type { Failure } from "./failure";
 
 /**
  * A Nexus operation error.
@@ -35,6 +36,13 @@ export class OperationError extends Error {
   declare public readonly cause: Error;
 
   /**
+   * Set if this error was constructed from a {@link Failure} object.
+   *
+   * Preserves the original failure for round-tripping through the wire format.
+   */
+  public readonly originalFailure?: Failure;
+
+  /**
    * Constructs a new {@link OperationError}.
    *
    * @param state - The state of the operation.
@@ -53,6 +61,10 @@ export class OperationError extends Error {
 
     super(actualMessage, { cause: options?.cause });
     this.state = state;
+    this.originalFailure = options?.originalFailure;
+    if (options?.stackTrace !== undefined) {
+      this.stack = options.stackTrace;
+    }
   }
 }
 
@@ -69,6 +81,22 @@ export interface OperationErrorOptions {
    * Underlying cause of the error.
    */
   cause?: Error | undefined;
+
+  /**
+   * An optional stack trace string associated with this error.
+   *
+   * When provided, this overrides the native `stack` property on the error.
+   * This is typically used for remote stack traces received over the wire,
+   * which may originate from a different language runtime.
+   */
+  stackTrace?: string;
+
+  /**
+   * An optional {@link Failure} object from which this error was constructed.
+   *
+   * Preserves the original failure for round-tripping through the wire format.
+   */
+  originalFailure?: Failure;
 }
 
 /**

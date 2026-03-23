@@ -24,7 +24,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - run: pnpm test
+
+      # The node test runner changes behavior between node versions 20 & 24
+      # 24 automatically reads typescript files and therefore test files must be specified
+      #  to properly test the built JS
+      - run: node --enable-source-maps --test 'lib/**/*.test.js'
+        if: matrix.node-version == 24
+
+      # 20 does not automatically read typescript files and does not support glob patterns
+      - run: node --enable-source-maps --test
+        if: matrix.node-version != 24
 
       - run: pnpm run lint
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20

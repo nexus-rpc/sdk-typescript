@@ -1,4 +1,5 @@
 import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
+import type { Failure } from "./failure";
 
 /**
  * A Nexus handler error.
@@ -19,6 +20,7 @@ import { injectSymbolBasedInstanceOf } from "../internal/symbol-instanceof";
  *
  *     // Throw a retryable internal error
  *     throw new HandlerError("INTERNAL", "Database unavailable", { retryableOverride: true });
+ *
  * ```
  *
  * @experimental
@@ -27,9 +29,20 @@ export class HandlerError extends Error {
   /**
    * One of the predefined error types.
    *
+   * If the constructor received an unknown string, this will be `"UNKNOWN"`.
+   * Use {@link rawErrorType} to access the original string.
+   *
    * @see {@link HandlerErrorType}
    */
   public readonly type: HandlerErrorType;
+
+  /**
+   * The raw error type string.
+   *
+   * For known types, this equals {@link type}. For unknown types, this preserves
+   * the original wire string while {@link type} is set to `"UNKNOWN"`.
+   */
+  public readonly rawErrorType: string;
 
   /**
    * Whether this error should be considered retryable.
@@ -42,12 +55,19 @@ export class HandlerError extends Error {
    *
    * @see {@link retryable}.
    */
-  public readonly retryableOverride: boolean | undefined;
+  public readonly retryableOverride?: boolean;
+
+  /**
+   * Set if this error was constructed from a {@link Failure} object.
+   *
+   * Preserves the original failure for round-tripping through the wire format.
+   */
+  public readonly originalFailure?: Failure;
 
   /**
    * Constructs a new {@link HandlerError}.
    *
-   * @param type - The type of the error.
+   * @param type - The type of the error. Must be a known {@link HandlerErrorType}.
    * @param message - The message of the error.
    * @param options - Extra options for the error, including the cause and retryable override.
    *
@@ -57,8 +77,17 @@ export class HandlerError extends Error {
     const actualMessage = message || `Handler error: ${type}`;
 
     super(actualMessage, { cause: options?.cause });
+
+    if (!Object.hasOwn(HandlerErrorType, type)) {
+      throw new TypeError(`Invalid HandlerErrorType: ${type}`);
+    }
     this.type = type;
+    this.rawErrorType = type === "UNKNOWN" ? (options?.rawErrorType ?? type) : type;
     this.retryableOverride = options?.retryableOverride;
+    this.originalFailure = options?.originalFailure;
+    if (options?.stackTrace !== undefined) {
+      this.stack = options.stackTrace;
+    }
   }
 
   /**
@@ -86,6 +115,7 @@ export class HandlerError extends Error {
       case "RESOURCE_EXHAUSTED":
       case "INTERNAL":
       case "REQUEST_TIMEOUT":
+      case "UNKNOWN":
         return true;
 
       default: {
@@ -118,6 +148,30 @@ export interface HandlerErrorOptions {
    * For example, by default, `INTERNAL` is retryable, but `UNAVAILABLE` is non-retryable.
    */
   retryableOverride?: boolean | undefined;
+
+  /**
+   * An optional stack trace string associated with this error.
+   *
+   * When provided, this overrides the native `stack` property on the error.
+   * This is typically used for remote stack traces received over the wire,
+   * which may originate from a different language runtime.
+   */
+  stackTrace?: string;
+
+  /**
+   * An optional {@link Failure} object from which this error was constructed.
+   *
+   * Preserves the original failure for round-tripping through the wire format.
+   */
+  originalFailure?: Failure;
+
+  /**
+   * The original error type string, preserving the raw wire value.
+   *
+   * For known types, this option is ignored.
+   * When the error's type is set to `"UNKNOWN"`, this option is used to preserve the original wire string.
+   */
+  rawErrorType?: string;
 }
 
 /**
@@ -127,6 +181,13 @@ export interface HandlerErrorOptions {
  */
 export type HandlerErrorType = (typeof HandlerErrorType)[keyof typeof HandlerErrorType];
 export const HandlerErrorType = {
+  /**
+   * The error type is unknown.
+   *
+   * Subsequent requests by the client are permissible.
+   */
+  UNKNOWN: "UNKNOWN",
+
   /**
    * The handler cannot or will not process the request due to an apparent client error.
    *
@@ -179,7 +240,7 @@ export const HandlerErrorType = {
   RESOURCE_EXHAUSTED: "RESOURCE_EXHAUSTED",
 
   /**
-   * An internal error occured.
+   * An internal error occurred.
    *
    * Subsequent requests by the client are permissible.
    */
