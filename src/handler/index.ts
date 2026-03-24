@@ -22,5 +22,3 @@ export {
   type OperationHandlerFor,
   type ServiceHandlerFor,
 } from "./service-handler";
-
-export { ServiceRegistry } from "./service-registry";
