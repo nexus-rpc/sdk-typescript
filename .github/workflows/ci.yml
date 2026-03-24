@@ -36,19 +36,19 @@ jobs:
         if: matrix.node-version != 24
 
       - run: pnpm run lint
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 24
 
       - run: pnpm run format
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 24
 
       - run: pnpm run build:docs
         # Only generate docs once on ubuntu.
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 24
 
       - id: docs-deployment
         # Only upload docs once on ubuntu.
         # NOTE that this will not deploy docs, there's a separate job for that, that runs on main only.
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 24
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
