@@ -113,43 +113,33 @@ throw new HandlerError("INTERNAL", "Database unavailable", {
 });
 ```
 
-### Register Services
-
-Use `ServiceRegistry` to register one or more service handlers and dispatch incoming requests.
-
-```typescript
-import { ServiceRegistry } from "nexus-rpc";
-
-const registry = ServiceRegistry.create([handler]);
-```
-
 ## Contributing
 
 ### Prerequisites
 
-- [Node.js >= 18](https://nodejs.org/)
+- [Node.js >= 20](https://nodejs.org/)
 
 ### Build
 
 ```shell
-npm ci
-npm run build
+pnpm install --frozen-lockfile
+pnpm run build
 ```
 
 ### Test
 
 ```shell
-npm test
+pnpm test
 ```
 
 ### Lint
 
 ```shell
-npm run lint
+pnpm run lint
 ```
 
 ### Format
 
 ```shell
-npm run format
+pnpm run format
 ```
