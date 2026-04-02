@@ -22,8 +22,7 @@ This SDK provides the core primitives for defining and implementing Nexus servic
 
 ## Protocol Implementations
 
-- [Temporal](https://docs.temporal.io/nexus) — builds on this SDK to provide a full implementation of the Nexus
-  protocol, backed by Durable Execution.
+- [Temporal](https://docs.temporal.io/nexus) — builds on this SDK to provide a full implementation of the Nexus protocol, backed by Durable Execution.
 
 ## Installation
 
