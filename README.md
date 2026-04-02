@@ -18,6 +18,12 @@ ongoing operation (asynchronous response). The caller can cancel an asynchronous
 fetch its current state. The caller can also specify a callback URL, which the handler uses to deliver the result of an
 asynchronous operation when it is ready.
 
+This SDK provides the core primitives for defining and implementing Nexus services in TypeScript.
+
+## Protocol Implementations
+
+- [Temporal](https://docs.temporal.io/nexus) — builds on this SDK to provide a full implementation of the Nexus protocol, backed by Durable Execution.
+
 ## Installation
 
 ```shell
