@@ -1,6 +1,6 @@
 {
   "name": "nexus-rpc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Nexus TypeScript SDK",
   "license": "MIT",
   "author": "Temporal Technologies Inc. <sdk@temporal.io>",
