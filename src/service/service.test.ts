@@ -2,13 +2,29 @@ import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import * as nexus from "../index";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
-  fullOp: nexus.operation<number, number>({ name: "custom name" }),
+  fullOp: nexus.operation<number, number>({
+    name: "custom name",
+    inputType: {
+      converterHint: { converter: "input" },
+    },
+    outputType: {
+      converterHint: { converter: "output" },
+    },
+  }),
 });
 
 describe("service and operation", () => {
+  it("preserves operation type information", () => {
+    assert.deepEqual(myService.operations.fullOp.inputType, {
+      converterHint: { converter: "input" },
+    });
+    assert.deepEqual(myService.operations.fullOp.outputType, {
+      converterHint: { converter: "output" },
+    });
+  });
+
   it("throws when registering a service with an empty name", () => {
     assert.throws(
       () => nexus.service("", {}),

@@ -2,6 +2,7 @@ import { mapKeyValues } from "../internal/object-utils";
 import { Simplify } from "../internal/types";
 import { inputBrand, outputBrand, validateServiceDefinition } from "./service-definition";
 import { OperationDefinition, ServiceDefinition } from "./service-definition";
+import type { TypeInfo } from "./type-info";
 
 /**
  * Construct a service definition for a collection of operations.
@@ -40,6 +41,8 @@ export function operation<I, O>(op?: OperationOptions<I, O>): PartialOperation<I
  */
 export interface OperationOptions<_I, _O> {
   name?: string;
+  inputType?: TypeInfo<_I, unknown>;
+  outputType?: TypeInfo<_O, unknown>;
 }
 
 /**
@@ -69,6 +72,8 @@ export type OperationMapFromPartial<T extends PartialOperationMap> = {
  */
 export interface PartialOperation<I, O> {
   name?: string;
+  inputType?: TypeInfo<I, unknown>;
+  outputType?: TypeInfo<O, unknown>;
   [inputBrand]: I;
   [outputBrand]: O;
 }

@@ -4,7 +4,11 @@ import * as nexus from "../index";
 
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
-  fullOp: nexus.operation<number, number>({ name: "custom name" }),
+  fullOp: nexus.operation<number, number>({
+    name: "custom name",
+    inputType: { converterHint: { converter: "input" } },
+    outputType: { converterHint: { converter: "output" } },
+  }),
 });
 
 const myServiceOpsHandler: nexus.ServiceHandlerFor<(typeof myService)["operations"]> = {
@@ -40,6 +44,14 @@ describe("ServiceHandler", () => {
     const serviceHandler = nexus.serviceHandler(myService, myServiceOpsHandler);
     assert.equal(serviceHandler.getOperationHandler("syncOp").name, "syncOp");
     assert.equal(serviceHandler.getOperationHandler("custom name" as any).name, "custom name");
+    assert.equal(
+      serviceHandler.getOperationHandler("custom name" as any).inputType?.converterHint?.converter,
+      "input",
+    );
+    assert.equal(
+      serviceHandler.getOperationHandler("custom name" as any).outputType?.converterHint?.converter,
+      "output",
+    );
   });
 
   it("Can be constructed with a class", () => {
