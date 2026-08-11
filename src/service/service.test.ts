@@ -2,27 +2,31 @@ import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import * as nexus from "../index";
 
+const inputType: nexus.TypeInfo<number, string> = {
+  transferTypeConverter: {
+    fromTransferType: (value) => Number(value),
+    toTransferType: (value) => String(value),
+  },
+  payloadConverterHint: { converter: "input" },
+};
+
+const outputType: nexus.TypeInfo<number> = {
+  payloadConverterHint: { converter: "output" },
+};
+
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
   fullOp: nexus.operation<number, number>({
     name: "custom name",
-    inputType: {
-      converterHint: { converter: "input" },
-    },
-    outputType: {
-      converterHint: { converter: "output" },
-    },
+    inputType,
+    outputType,
   }),
 });
 
 describe("service and operation", () => {
   it("preserves operation type information", () => {
-    assert.deepEqual(myService.operations.fullOp.inputType, {
-      converterHint: { converter: "input" },
-    });
-    assert.deepEqual(myService.operations.fullOp.outputType, {
-      converterHint: { converter: "output" },
-    });
+    assert.strictEqual(myService.operations.fullOp.inputType, inputType);
+    assert.strictEqual(myService.operations.fullOp.outputType, outputType);
   });
 
   it("throws when registering a service with an empty name", () => {

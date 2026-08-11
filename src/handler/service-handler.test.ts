@@ -6,8 +6,8 @@ const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
   fullOp: nexus.operation<number, number>({
     name: "custom name",
-    inputType: { converterHint: { converter: "input" } },
-    outputType: { converterHint: { converter: "output" } },
+    inputType: { payloadConverterHint: { converter: "input" } },
+    outputType: { payloadConverterHint: { converter: "output" } },
   }),
 });
 
@@ -45,11 +45,13 @@ describe("ServiceHandler", () => {
     assert.equal(serviceHandler.getOperationHandler("syncOp").name, "syncOp");
     assert.equal(serviceHandler.getOperationHandler("custom name" as any).name, "custom name");
     assert.equal(
-      serviceHandler.getOperationHandler("custom name" as any).inputType?.converterHint?.converter,
+      serviceHandler.getOperationHandler("custom name" as any).inputType?.payloadConverterHint
+        ?.converter,
       "input",
     );
     assert.equal(
-      serviceHandler.getOperationHandler("custom name" as any).outputType?.converterHint?.converter,
+      serviceHandler.getOperationHandler("custom name" as any).outputType?.payloadConverterHint
+        ?.converter,
       "output",
     );
   });
