@@ -7,7 +7,7 @@ export {
   type OperationKey,
 } from "./service-definition";
 
-export { type TypeInfo, type TransferTypeConverter, type ConverterHint } from "./type-info";
+export { type TypeInfo, type TransferTypeConverter } from "./type-info";
 
 export {
   service,

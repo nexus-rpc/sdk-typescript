@@ -2,12 +2,26 @@ import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import * as nexus from "../index";
 
+const inputType: nexus.TypeInfo<number, string> = {
+  transferTypeConverter: {
+    fromTransferType: (value) => Number(value),
+    toTransferType: (value) => String(value),
+  },
+};
+
+const outputType: nexus.TypeInfo<number, string> = {
+  transferTypeConverter: {
+    fromTransferType: (value) => Number(value),
+    toTransferType: (value) => String(value),
+  },
+};
+
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
   fullOp: nexus.operation<number, number>({
     name: "custom name",
-    inputType: { payloadConverterHint: { converter: "input" } },
-    outputType: { payloadConverterHint: { converter: "output" } },
+    inputType,
+    outputType,
   }),
 });
 
@@ -44,16 +58,8 @@ describe("ServiceHandler", () => {
     const serviceHandler = nexus.serviceHandler(myService, myServiceOpsHandler);
     assert.equal(serviceHandler.getOperationHandler("syncOp").name, "syncOp");
     assert.equal(serviceHandler.getOperationHandler("custom name" as any).name, "custom name");
-    assert.equal(
-      serviceHandler.getOperationHandler("custom name" as any).inputType?.payloadConverterHint
-        ?.converter,
-      "input",
-    );
-    assert.equal(
-      serviceHandler.getOperationHandler("custom name" as any).outputType?.payloadConverterHint
-        ?.converter,
-      "output",
-    );
+    assert.equal(serviceHandler.getOperationHandler("custom name" as any).inputType, inputType);
+    assert.equal(serviceHandler.getOperationHandler("custom name" as any).outputType, outputType);
   });
 
   it("Can be constructed with a class", () => {

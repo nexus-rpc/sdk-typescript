@@ -7,11 +7,13 @@ const inputType: nexus.TypeInfo<number, string> = {
     fromTransferType: (value) => Number(value),
     toTransferType: (value) => String(value),
   },
-  payloadConverterHint: { converter: "input" },
 };
 
-const outputType: nexus.TypeInfo<number> = {
-  payloadConverterHint: { converter: "output" },
+const outputType: nexus.TypeInfo<number, string> = {
+  transferTypeConverter: {
+    fromTransferType: (value) => Number(value),
+    toTransferType: (value) => String(value),
+  },
 };
 
 const myService = nexus.service("service name", {
