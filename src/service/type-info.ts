@@ -4,10 +4,8 @@
  * A transfer representation can be more suitable for moving between a Nexus caller and handler. For example, an
  * application can map a class instance to a plain object and reconstruct the class after transfer.
  *
- * Nexus service definitions preserve this information. Protocol integrations are responsible for applying it when
- * transferring operation inputs and outputs.
- *
- * When {@link transferTypeConverter} is unspecified, `D` should be the same type as `T`.
+ * The SDK retains this information on operation definitions and compiled operation handlers, but does not invoke the
+ * converter.
  *
  * @experimental
  */
@@ -24,6 +22,9 @@ export interface TypeInfo<T = unknown, D = T> {
  * @experimental
  */
 export interface TransferTypeConverter<T, D = unknown> {
+  /** Converts a transfer representation back to its application value. */
   fromTransferType(value: D): T;
+
+  /** Converts an application value to its transfer representation. */
   toTransferType(value: T): D;
 }

@@ -4,15 +4,23 @@ import * as nexus from "../index";
 
 const inputType: nexus.TypeInfo<number, string> = {
   transferTypeConverter: {
-    fromTransferType: (value) => Number(value),
-    toTransferType: (value) => String(value),
+    fromTransferType: () => {
+      throw new Error("Nexus RPC must not invoke operation type converters");
+    },
+    toTransferType: () => {
+      throw new Error("Nexus RPC must not invoke operation type converters");
+    },
   },
 };
 
 const outputType: nexus.TypeInfo<number, string> = {
   transferTypeConverter: {
-    fromTransferType: (value) => Number(value),
-    toTransferType: (value) => String(value),
+    fromTransferType: () => {
+      throw new Error("Nexus RPC must not invoke operation type converters");
+    },
+    toTransferType: () => {
+      throw new Error("Nexus RPC must not invoke operation type converters");
+    },
   },
 };
 
@@ -54,7 +62,7 @@ describe("ServiceHandler", () => {
     };
   }
 
-  it("Can be constructed with a plain object", () => {
+  it("retains operation type information without invoking its converter", () => {
     const serviceHandler = nexus.serviceHandler(myService, myServiceOpsHandler);
     assert.equal(serviceHandler.getOperationHandler("syncOp").name, "syncOp");
     assert.equal(serviceHandler.getOperationHandler("custom name" as any).name, "custom name");
