@@ -4,9 +4,6 @@
  * A transfer representation can be more suitable for moving between a Nexus caller and handler. For example, an
  * application can map a class instance to a plain object and reconstruct the class after transfer.
  *
- * The SDK retains this information on operation definitions and compiled operation handlers, but does not invoke the
- * converter.
- *
  * @experimental
  */
 export interface TypeInfo<T = unknown, D = T> {

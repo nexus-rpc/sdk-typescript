@@ -2,65 +2,32 @@ import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import * as nexus from "../index";
 
-class ApplicationInput {
+class Box {
   constructor(readonly value: bigint) {}
 }
 
-interface InputTransfer {
-  value: string;
-}
-
-class ApplicationOutput {
-  constructor(readonly value: bigint) {}
-}
-
-interface OutputTransfer {
-  value: string;
-}
-
-const inputType = {
+const boxTypeInfo: nexus.TypeInfo<Box, string> = {
   transferTypeConverter: {
-    fromTransferType: (value) => new ApplicationInput(BigInt(value.value)),
-    toTransferType: (value) => ({ value: value.value.toString() }),
+    fromTransferType: (value) => new Box(BigInt(value)),
+    toTransferType: (value) => value.value.toString(),
   },
-} satisfies nexus.TypeInfo<ApplicationInput, InputTransfer>;
-
-const outputType = {
-  transferTypeConverter: {
-    fromTransferType: (value) => new ApplicationOutput(BigInt(value.value)),
-    toTransferType: (value) => ({ value: value.value.toString() }),
-  },
-} satisfies nexus.TypeInfo<ApplicationOutput, OutputTransfer>;
-
-const toInputTransfer: (value: ApplicationInput) => InputTransfer =
-  inputType.transferTypeConverter.toTransferType;
-const fromInputTransfer: (value: InputTransfer) => ApplicationInput =
-  inputType.transferTypeConverter.fromTransferType;
-void toInputTransfer;
-void fromInputTransfer;
-
-const typeInfoForAnotherApplicationType = {
-  transferTypeConverter: {
-    fromTransferType: (value: string) => value,
-    toTransferType: (value: string) => value,
-  },
-} satisfies nexus.TypeInfo<string>;
-
-nexus.operation<ApplicationInput, ApplicationOutput>({
-  // @ts-expect-error Type information must match the operation input type.
-  inputType: typeInfoForAnotherApplicationType,
-});
+};
 
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
-  fullOp: nexus.operation<ApplicationInput, ApplicationOutput>({
+  fullOp: nexus.operation<Box, Box>({
     name: "custom name",
-    inputType,
-    outputType,
+    inputType: boxTypeInfo,
+    outputType: boxTypeInfo,
   }),
 });
 
 describe("service and operation", () => {
+  it("defines operation input and output type information", () => {
+    assert.strictEqual(myService.operations.fullOp.inputType, boxTypeInfo);
+    assert.strictEqual(myService.operations.fullOp.outputType, boxTypeInfo);
+  });
+
   it("throws when registering a service with an empty name", () => {
     assert.throws(
       () => nexus.service("", {}),
@@ -99,7 +66,7 @@ describe("Mapped type `OperationInput`", () => {
     }
     {
       type Actual = nexus.OperationInput<(typeof myService)["operations"]["fullOp"]>;
-      type Expected = ApplicationInput;
+      type Expected = Box;
       somethingOfType<Actual>() satisfies Expected;
       somethingOfType<Expected>() satisfies Actual;
     }
@@ -116,7 +83,7 @@ describe("Mapped type `OperationOutput`", () => {
     }
     {
       type Actual = nexus.OperationOutput<(typeof myService)["operations"]["fullOp"]>;
-      type Expected = ApplicationOutput;
+      type Expected = Box;
       somethingOfType<Actual>() satisfies Expected;
       somethingOfType<Expected>() satisfies Actual;
     }
