@@ -1,3 +1,5 @@
+import type { TypeInfo } from "./type-info";
+
 export declare const inputBrand: unique symbol;
 export declare const outputBrand: unique symbol;
 
@@ -20,6 +22,8 @@ export interface ServiceDefinition<Ops extends OperationMap = OperationMap> {
  */
 export interface OperationDefinition<I, O> {
   name: string;
+  inputType?: TypeInfo<I, unknown>;
+  outputType?: TypeInfo<O, unknown>;
   [inputBrand]: I;
   [outputBrand]: O;
 }

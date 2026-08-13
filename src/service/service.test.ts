@@ -2,13 +2,32 @@ import { it, describe } from "node:test";
 import * as assert from "node:assert/strict";
 import * as nexus from "../index";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+class Box {
+  constructor(readonly value: bigint) {}
+}
+
+const boxTypeInfo: nexus.TypeInfo<Box, string> = {
+  transferTypeConverter: {
+    fromTransferType: (value) => new Box(BigInt(value)),
+    toTransferType: (value) => value.value.toString(),
+  },
+};
+
 const myService = nexus.service("service name", {
   syncOp: nexus.operation<string, string>(),
-  fullOp: nexus.operation<number, number>({ name: "custom name" }),
+  fullOp: nexus.operation<Box, Box>({
+    name: "custom name",
+    inputType: boxTypeInfo,
+    outputType: boxTypeInfo,
+  }),
 });
 
 describe("service and operation", () => {
+  it("defines operation input and output type information", () => {
+    assert.strictEqual(myService.operations.fullOp.inputType, boxTypeInfo);
+    assert.strictEqual(myService.operations.fullOp.outputType, boxTypeInfo);
+  });
+
   it("throws when registering a service with an empty name", () => {
     assert.throws(
       () => nexus.service("", {}),
@@ -47,7 +66,7 @@ describe("Mapped type `OperationInput`", () => {
     }
     {
       type Actual = nexus.OperationInput<(typeof myService)["operations"]["fullOp"]>;
-      type Expected = number;
+      type Expected = Box;
       somethingOfType<Actual>() satisfies Expected;
       somethingOfType<Expected>() satisfies Actual;
     }
@@ -64,7 +83,7 @@ describe("Mapped type `OperationOutput`", () => {
     }
     {
       type Actual = nexus.OperationOutput<(typeof myService)["operations"]["fullOp"]>;
-      type Expected = number;
+      type Expected = Box;
       somethingOfType<Actual>() satisfies Expected;
       somethingOfType<Expected>() satisfies Actual;
     }
