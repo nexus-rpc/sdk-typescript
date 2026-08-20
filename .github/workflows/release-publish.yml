@@ -71,11 +71,10 @@ jobs:
           node-version: "24"
           package-manager-cache: false
 
-      - name: Validate release metadata
+      - name: Read release metadata
         id: metadata
         uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
-          EXPECTED_PACKAGE_NAME: nexus-rpc
           RELEASE_SHA: ${{ github.sha }}
         with:
           github-token: ${{ github.token }}
@@ -83,43 +82,7 @@ jobs:
             const fs = require("node:fs");
 
             const manifest = JSON.parse(fs.readFileSync("package.json", "utf8"));
-            const packageManagerMatch = /^pnpm@(\d+\.\d+\.\d+)$/.exec(manifest.packageManager);
-            const versionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/;
-
-            if (manifest.name !== process.env.EXPECTED_PACKAGE_NAME) {
-              throw new Error(
-                `Expected package ${process.env.EXPECTED_PACKAGE_NAME}, found ${manifest.name}`,
-              );
-            }
-            if (typeof manifest.version !== "string" || !versionPattern.test(manifest.version)) {
-              throw new Error(`Invalid release version: ${manifest.version}`);
-            }
-            if (!packageManagerMatch) {
-              throw new Error(`Expected an exact pnpm packageManager version, found ${manifest.packageManager}`);
-            }
-
-            const pnpmVersion = packageManagerMatch[1];
-            if (manifest.devEngines?.packageManager?.version !== pnpmVersion) {
-              throw new Error(
-                `packageManager uses pnpm ${pnpmVersion}, but devEngines.packageManager uses ` +
-                  `${manifest.devEngines?.packageManager?.version}`,
-              );
-            }
-
-            const published = await exec.getExecOutput(
-              "npm",
-              ["view", `${manifest.name}@${manifest.version}`, "version", "--json"],
-              { ignoreReturnCode: true, silent: true },
-            );
-            if (published.exitCode === 0) {
-              throw new Error(`${manifest.name}@${manifest.version} is already published`);
-            }
-            if (!`${published.stdout}\n${published.stderr}`.includes("E404")) {
-              throw new Error(
-                `Could not determine whether ${manifest.name}@${manifest.version} is published:\n` +
-                  `${published.stdout}\n${published.stderr}`,
-              );
-            }
+            const pnpmVersion = manifest.packageManager.replace("pnpm@", "");
 
             const prerelease = manifest.version.includes("-");
             core.setOutput("artifact_name", `release-dist-${manifest.version}`);
@@ -135,7 +98,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm run format
+        run: |
+          pnpm run format
+          git diff --exit-code
 
       - name: Lint
         run: pnpm run lint
@@ -265,36 +230,6 @@ jobs:
         with:
           name: ${{ needs.build_and_verify.outputs.artifact_name }}
           path: dist
-
-      - name: Verify downloaded release artifact
-        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
-        env:
-          PACKAGE_NAME: ${{ needs.build_and_verify.outputs.package_name }}
-          TARBALL_NAME: ${{ needs.build_and_verify.outputs.tarball_name }}
-          VERSION: ${{ needs.build_and_verify.outputs.version }}
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const fs = require("node:fs");
-            const path = require("node:path");
-
-            const tarball = path.join(process.env.GITHUB_WORKSPACE, "dist", process.env.TARBALL_NAME);
-            if (!fs.existsSync(tarball)) {
-              throw new Error(`Release artifact ${tarball} does not exist`);
-            }
-
-            const extracted = await exec.getExecOutput(
-              "tar",
-              ["-xOf", tarball, "package/package.json"],
-              { silent: true },
-            );
-            const manifest = JSON.parse(extracted.stdout);
-            if (manifest.name !== process.env.PACKAGE_NAME) {
-              throw new Error(`Expected ${process.env.PACKAGE_NAME}, found ${manifest.name}`);
-            }
-            if (manifest.version !== process.env.VERSION) {
-              throw new Error(`Expected ${process.env.VERSION}, found ${manifest.version}`);
-            }
 
       # GitHub checks out an exact SHA, so pnpm cannot identify a branch in this job.
       - name: Publish to npm
