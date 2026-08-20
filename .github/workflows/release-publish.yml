@@ -1,0 +1,454 @@
+name: Release Publish
+run-name: Release from main
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-publish
+  cancel-in-progress: false
+
+jobs:
+  build_and_verify:
+    name: Build and verify package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
+      npm_tag: ${{ steps.metadata.outputs.npm_tag }}
+      package_name: ${{ steps.metadata.outputs.package_name }}
+      pnpm_version: ${{ steps.metadata.outputs.pnpm_version }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
+      release_sha: ${{ steps.metadata.outputs.release_sha }}
+      tarball_name: ${{ steps.metadata.outputs.tarball_name }}
+      version: ${{ steps.metadata.outputs.version }}
+    steps:
+      - name: Validate release source
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const expectedOwner = "nexus-rpc";
+            const expectedRepository = "sdk-typescript";
+            const expectedRef = "refs/heads/main";
+
+            if (
+              process.env.REPOSITORY_OWNER !== expectedOwner ||
+              process.env.REPOSITORY_NAME !== expectedRepository
+            ) {
+              throw new Error(
+                `Releases must run from ${expectedOwner}/${expectedRepository}, ` +
+                  `not ${process.env.REPOSITORY_OWNER}/${process.env.REPOSITORY_NAME}`,
+              );
+            }
+            if (process.env.RELEASE_REF !== expectedRef) {
+              throw new Error(`Releases must run from ${expectedRef}, not ${process.env.RELEASE_REF}`);
+            }
+
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Validate release metadata
+        id: metadata
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          EXPECTED_PACKAGE_NAME: nexus-rpc
+          RELEASE_SHA: ${{ github.sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require("node:fs");
+
+            const manifest = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const packageManagerMatch = /^pnpm@(\d+\.\d+\.\d+)$/.exec(manifest.packageManager);
+            const versionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/;
+
+            if (manifest.name !== process.env.EXPECTED_PACKAGE_NAME) {
+              throw new Error(
+                `Expected package ${process.env.EXPECTED_PACKAGE_NAME}, found ${manifest.name}`,
+              );
+            }
+            if (typeof manifest.version !== "string" || !versionPattern.test(manifest.version)) {
+              throw new Error(`Invalid release version: ${manifest.version}`);
+            }
+            if (!packageManagerMatch) {
+              throw new Error(`Expected an exact pnpm packageManager version, found ${manifest.packageManager}`);
+            }
+
+            const pnpmVersion = packageManagerMatch[1];
+            if (manifest.devEngines?.packageManager?.version !== pnpmVersion) {
+              throw new Error(
+                `packageManager uses pnpm ${pnpmVersion}, but devEngines.packageManager uses ` +
+                  `${manifest.devEngines?.packageManager?.version}`,
+              );
+            }
+
+            const published = await exec.getExecOutput(
+              "npm",
+              ["view", `${manifest.name}@${manifest.version}`, "version", "--json"],
+              { ignoreReturnCode: true, silent: true },
+            );
+            if (published.exitCode === 0) {
+              throw new Error(`${manifest.name}@${manifest.version} is already published`);
+            }
+            if (!`${published.stdout}\n${published.stderr}`.includes("E404")) {
+              throw new Error(
+                `Could not determine whether ${manifest.name}@${manifest.version} is published:\n` +
+                  `${published.stdout}\n${published.stderr}`,
+              );
+            }
+
+            const prerelease = manifest.version.includes("-");
+            core.setOutput("artifact_name", `release-dist-${manifest.version}`);
+            core.setOutput("npm_tag", prerelease ? "next" : "latest");
+            core.setOutput("package_name", manifest.name);
+            core.setOutput("pnpm_version", pnpmVersion);
+            core.setOutput("prerelease", prerelease);
+            core.setOutput("release_sha", process.env.RELEASE_SHA);
+            core.setOutput("tarball_name", `${manifest.name}-${manifest.version}.tgz`);
+            core.setOutput("version", manifest.version);
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm run format
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Clean
+        run: pnpm run clean
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Pack release artifact
+        run: pnpm pack --pack-destination dist
+
+      - name: Verify release artifact
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          TARBALL_NAME: ${{ steps.metadata.outputs.tarball_name }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const path = require("node:path");
+
+            const tarball = path.join(process.env.GITHUB_WORKSPACE, "dist", process.env.TARBALL_NAME);
+            const listing = await exec.getExecOutput("tar", ["-tzf", tarball], { silent: true });
+            const contents = listing.stdout.split(/\r?\n/).filter(Boolean);
+            const requiredPaths = [
+              "package/package.json",
+              "package/LICENSE",
+              "package/README.md",
+              "package/lib/index.js",
+              "package/lib/index.d.ts",
+            ];
+
+            for (const requiredPath of requiredPaths) {
+              if (!contents.includes(requiredPath)) {
+                throw new Error(`Release artifact is missing ${requiredPath}`);
+              }
+            }
+
+            const forbiddenPath = contents.find((entry) =>
+              entry
+                .split("/")
+                .some((part) => part === "node_modules" || part.includes(".test.")),
+            );
+            if (forbiddenPath) {
+              throw new Error(`Release artifact contains forbidden path ${forbiddenPath}`);
+            }
+
+      - name: Smoke test release artifact
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          PACKAGE_NAME: ${{ steps.metadata.outputs.package_name }}
+          TARBALL_NAME: ${{ steps.metadata.outputs.tarball_name }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require("node:fs");
+            const { createRequire } = require("node:module");
+            const path = require("node:path");
+
+            const consumerDirectory = path.join(process.env.RUNNER_TEMP, "release-artifact-smoke");
+            const tarball = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "dist",
+              process.env.TARBALL_NAME,
+            );
+            fs.mkdirSync(consumerDirectory);
+            await exec.exec("npm", ["init", "--yes"], { cwd: consumerDirectory, silent: true });
+            await exec.exec("pnpm", ["add", "--ignore-scripts", tarball], {
+              cwd: consumerDirectory,
+            });
+
+            const consumerRequire = createRequire(path.join(consumerDirectory, "package.json"));
+            const nexus = consumerRequire(process.env.PACKAGE_NAME);
+            const manifest = consumerRequire(`${process.env.PACKAGE_NAME}/package.json`);
+            if (manifest.version !== process.env.VERSION) {
+              throw new Error(`Expected version ${process.env.VERSION}, found ${manifest.version}`);
+            }
+            for (const exportName of ["operation", "service", "serviceHandler"]) {
+              if (typeof nexus[exportName] !== "function") {
+                throw new Error(`Expected ${exportName} to be a function`);
+              }
+            }
+
+      - name: Upload verified release artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: dist/${{ steps.metadata.outputs.tarball_name }}
+          if-no-files-found: error
+          retention-days: 14
+
+  publish_npm:
+    name: Publish to npm
+    needs: build_and_verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: release
+      url: https://www.npmjs.com/package/${{ needs.build_and_verify.outputs.package_name }}/v/${{ needs.build_and_verify.outputs.version }}
+    permissions:
+      actions: read
+      id-token: write
+    steps:
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          run_install: false
+          version: ${{ needs.build_and_verify.outputs.pnpm_version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      # pnpm 10 delegates publishing to npm, whose OIDC support requires npm 11.5.1 or newer.
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.17.0
+
+      - name: Download verified release artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ needs.build_and_verify.outputs.artifact_name }}
+          path: dist
+
+      - name: Verify downloaded release artifact
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          PACKAGE_NAME: ${{ needs.build_and_verify.outputs.package_name }}
+          TARBALL_NAME: ${{ needs.build_and_verify.outputs.tarball_name }}
+          VERSION: ${{ needs.build_and_verify.outputs.version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
+
+            const tarball = path.join(process.env.GITHUB_WORKSPACE, "dist", process.env.TARBALL_NAME);
+            if (!fs.existsSync(tarball)) {
+              throw new Error(`Release artifact ${tarball} does not exist`);
+            }
+
+            const extracted = await exec.getExecOutput(
+              "tar",
+              ["-xOf", tarball, "package/package.json"],
+              { silent: true },
+            );
+            const manifest = JSON.parse(extracted.stdout);
+            if (manifest.name !== process.env.PACKAGE_NAME) {
+              throw new Error(`Expected ${process.env.PACKAGE_NAME}, found ${manifest.name}`);
+            }
+            if (manifest.version !== process.env.VERSION) {
+              throw new Error(`Expected ${process.env.VERSION}, found ${manifest.version}`);
+            }
+
+      # GitHub checks out an exact SHA, so pnpm cannot identify a branch in this job.
+      - name: Publish to npm
+        env:
+          NPM_CONFIG_PROVENANCE: "true"
+          NPM_TAG: ${{ needs.build_and_verify.outputs.npm_tag }}
+          TARBALL_NAME: ${{ needs.build_and_verify.outputs.tarball_name }}
+        run: pnpm publish "dist/$TARBALL_NAME" --access public --tag "$NPM_TAG" --provenance --no-git-checks
+
+  smoke_npm:
+    name: Smoke test npm package
+    needs:
+      - build_and_verify
+      - publish_npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.build_and_verify.outputs.release_sha }}
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install published package
+        id: install
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          PACKAGE_NAME: ${{ needs.build_and_verify.outputs.package_name }}
+          VERSION: ${{ needs.build_and_verify.outputs.version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
+
+            const maximumAttempts = 31;
+            for (let attempt = 1; attempt <= maximumAttempts; attempt++) {
+              const consumerDirectory = path.join(
+                process.env.RUNNER_TEMP,
+                `release-registry-smoke-${attempt}`,
+              );
+              fs.mkdirSync(consumerDirectory);
+              await exec.exec("npm", ["init", "--yes"], {
+                cwd: consumerDirectory,
+                silent: true,
+              });
+              const installExitCode = await exec.exec(
+                "pnpm",
+                [
+                  "add",
+                  "--ignore-scripts",
+                  "--prefer-online",
+                  `${process.env.PACKAGE_NAME}@${process.env.VERSION}`,
+                ],
+                { cwd: consumerDirectory, ignoreReturnCode: true },
+              );
+              if (installExitCode === 0) {
+                core.setOutput("consumer_dir", consumerDirectory);
+                return;
+              }
+              if (attempt === maximumAttempts) {
+                throw new Error(
+                  `${process.env.PACKAGE_NAME}@${process.env.VERSION} was not installable ` +
+                    `after ${maximumAttempts} attempts`,
+                );
+              }
+              core.info(
+                `${process.env.PACKAGE_NAME}@${process.env.VERSION} is not available yet; ` +
+                  "retrying in 30 seconds",
+              );
+              await new Promise((resolve) => setTimeout(resolve, 30_000));
+            }
+
+      - name: Verify published package
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          CONSUMER_DIR: ${{ steps.install.outputs.consumer_dir }}
+          NPM_TAG: ${{ needs.build_and_verify.outputs.npm_tag }}
+          PACKAGE_NAME: ${{ needs.build_and_verify.outputs.package_name }}
+          VERSION: ${{ needs.build_and_verify.outputs.version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { createRequire } = require("node:module");
+            const path = require("node:path");
+
+            const consumerRequire = createRequire(
+              path.join(process.env.CONSUMER_DIR, "package.json"),
+            );
+            const nexus = consumerRequire(process.env.PACKAGE_NAME);
+            const manifest = consumerRequire(`${process.env.PACKAGE_NAME}/package.json`);
+            if (manifest.version !== process.env.VERSION) {
+              throw new Error(`Expected version ${process.env.VERSION}, found ${manifest.version}`);
+            }
+            for (const exportName of ["operation", "service", "serviceHandler"]) {
+              if (typeof nexus[exportName] !== "function") {
+                throw new Error(`Expected ${exportName} to be a function`);
+              }
+            }
+
+            const tagged = await exec.getExecOutput(
+              "npm",
+              ["view", `${process.env.PACKAGE_NAME}@${process.env.NPM_TAG}`, "version"],
+              { cwd: process.env.CONSUMER_DIR, silent: true },
+            );
+            if (tagged.stdout.trim() !== process.env.VERSION) {
+              throw new Error(
+                `Expected ${process.env.PACKAGE_NAME}@${process.env.NPM_TAG} to resolve to ` +
+                  `${process.env.VERSION}, found ${tagged.stdout.trim()}`,
+              );
+            }
+
+  create_draft_release:
+    name: Create draft GitHub release
+    needs:
+      - build_and_verify
+      - smoke_npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create draft release with generated notes
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          PRERELEASE: ${{ needs.build_and_verify.outputs.prerelease }}
+          RELEASE_SHA: ${{ needs.build_and_verify.outputs.release_sha }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          VERSION: ${{ needs.build_and_verify.outputs.version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const release = await github.rest.repos.createRelease({
+              owner: process.env.REPOSITORY_OWNER,
+              repo: process.env.REPOSITORY_NAME,
+              tag_name: `v${process.env.VERSION}`,
+              target_commitish: process.env.RELEASE_SHA,
+              name: `v${process.env.VERSION}`,
+              draft: true,
+              prerelease: process.env.PRERELEASE === "true",
+              generate_release_notes: true,
+            });
+            core.info(`Created draft release ${release.data.html_url}`);
