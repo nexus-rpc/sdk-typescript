@@ -268,7 +268,7 @@ jobs:
           node-version: "24"
           package-manager-cache: false
 
-      - name: Install published package
+      - name: Wait for and install published package
         id: install
         uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
@@ -280,43 +280,41 @@ jobs:
             const fs = require("node:fs");
             const path = require("node:path");
 
+            const packageSpec = `${process.env.PACKAGE_NAME}@${process.env.VERSION}`;
             const maximumAttempts = 31;
             for (let attempt = 1; attempt <= maximumAttempts; attempt++) {
-              const consumerDirectory = path.join(
-                process.env.RUNNER_TEMP,
-                `release-registry-smoke-${attempt}`,
-              );
-              fs.mkdirSync(consumerDirectory);
-              await exec.exec("npm", ["init", "--yes"], {
-                cwd: consumerDirectory,
-                silent: true,
-              });
-              const installExitCode = await exec.exec(
+              const view = await exec.getExecOutput(
                 "npm",
-                [
-                  "install",
-                  "--ignore-scripts",
-                  "--prefer-online",
-                  `${process.env.PACKAGE_NAME}@${process.env.VERSION}`,
-                ],
-                { cwd: consumerDirectory, ignoreReturnCode: true },
+                ["view", packageSpec, "version"],
+                { ignoreReturnCode: true, silent: true },
               );
-              if (installExitCode === 0) {
-                core.setOutput("consumer_dir", consumerDirectory);
-                return;
+              if (view.exitCode === 0) {
+                const visibleVersion = view.stdout.trim();
+                if (visibleVersion !== process.env.VERSION) {
+                  throw new Error(
+                    `Expected ${packageSpec} to resolve to ${process.env.VERSION}, ` +
+                      `found ${visibleVersion}`,
+                  );
+                }
+                break;
               }
               if (attempt === maximumAttempts) {
-                throw new Error(
-                  `${process.env.PACKAGE_NAME}@${process.env.VERSION} was not installable ` +
-                    `after ${maximumAttempts} attempts`,
-                );
+                throw new Error(`${packageSpec} was not visible after ${maximumAttempts} attempts`);
               }
-              core.info(
-                `${process.env.PACKAGE_NAME}@${process.env.VERSION} is not available yet; ` +
-                  "retrying in 30 seconds",
-              );
+              core.info(`${packageSpec} is not available yet; retrying in 30 seconds`);
               await new Promise((resolve) => setTimeout(resolve, 30_000));
             }
+
+            const consumerDirectory = path.join(process.env.RUNNER_TEMP, "release-registry-smoke");
+            fs.mkdirSync(consumerDirectory);
+            await exec.exec("npm", ["init", "--yes"], {
+              cwd: consumerDirectory,
+              silent: true,
+            });
+            await exec.exec("npm", ["install", "--ignore-scripts", "--prefer-online", packageSpec], {
+              cwd: consumerDirectory,
+            });
+            core.setOutput("consumer_dir", consumerDirectory);
 
       - name: Verify published package
         uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
