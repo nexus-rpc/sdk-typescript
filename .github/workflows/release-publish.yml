@@ -262,11 +262,6 @@ jobs:
           ref: ${{ needs.build_and_verify.outputs.release_sha }}
           persist-credentials: false
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-        with:
-          run_install: false
-
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
@@ -297,9 +292,9 @@ jobs:
                 silent: true,
               });
               const installExitCode = await exec.exec(
-                "pnpm",
+                "npm",
                 [
-                  "add",
+                  "install",
                   "--ignore-scripts",
                   "--prefer-online",
                   `${process.env.PACKAGE_NAME}@${process.env.VERSION}`,
