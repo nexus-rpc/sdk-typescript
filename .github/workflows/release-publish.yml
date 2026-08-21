@@ -189,6 +189,13 @@ jobs:
               }
             }
 
+      - name: Dry-run package publication
+        env:
+          NPM_TAG: ${{ steps.metadata.outputs.npm_tag }}
+          TARBALL_NAME: ${{ steps.metadata.outputs.tarball_name }}
+        # The leading ./ prevents npm from interpreting dist/... as GitHub shorthand.
+        run: pnpm publish "./dist/$TARBALL_NAME" --access public --tag "$NPM_TAG" --no-git-checks --dry-run
+
       - name: Upload verified release artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -237,7 +244,7 @@ jobs:
           NPM_CONFIG_PROVENANCE: "true"
           NPM_TAG: ${{ needs.build_and_verify.outputs.npm_tag }}
           TARBALL_NAME: ${{ needs.build_and_verify.outputs.tarball_name }}
-        run: pnpm publish "dist/$TARBALL_NAME" --access public --tag "$NPM_TAG" --provenance --no-git-checks
+        run: pnpm publish "./dist/$TARBALL_NAME" --access public --tag "$NPM_TAG" --provenance --no-git-checks
 
   smoke_npm:
     name: Smoke test npm package
