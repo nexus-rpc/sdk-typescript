@@ -3,8 +3,6 @@
 [![CI](https://github.com/nexus-rpc/sdk-typescript/actions/workflows/ci.yml/badge.svg)](https://github.com/nexus-rpc/sdk-typescript/actions/workflows/ci.yml)
 [![API Docs](https://img.shields.io/badge/API_docs-blue)](https://nexus-rpc.github.io/sdk-typescript/)
 
-**This SDK is currently at an experimental release stage. Backwards-incompatible changes are anticipated until a stable release is announced.**
-
 TypeScript SDK for working with [Nexus RPC](https://github.com/nexus-rpc/api). See
 [API documentation](https://nexus-rpc.github.io/sdk-typescript/).
 
