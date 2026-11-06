@@ -22,7 +22,6 @@ import type { Failure } from "./failure";
  *     throw new OperationError("canceled", "User canceled the operation");
  * ```
  *
- * @experimental
  */
 export class OperationError extends Error {
   /**
@@ -49,7 +48,6 @@ export class OperationError extends Error {
    * @param message - The message of the error.
    * @param options - Extra options for the error, e.g. the cause.
    *
-   * @experimental
    */
   constructor(
     state: OperationErrorState,
@@ -73,7 +71,6 @@ injectSymbolBasedInstanceOf(OperationError, "OperationError");
 /**
  * Options for constructing an {@link OperationError}.
  *
- * @experimental
  * @inline
  */
 export interface OperationErrorOptions {
@@ -102,7 +99,6 @@ export interface OperationErrorOptions {
 /**
  * Describes state of an operation that did not complete successfully.
  *
- * @experimental
  * @inline
  */
 export type OperationErrorState = "failed" | "canceled";
