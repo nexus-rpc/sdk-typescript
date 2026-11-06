@@ -14,7 +14,6 @@ const isHandlerStartOperationResultSymbol = Symbol("__nexus_isHandlerStartOperat
  * Use either {@link HandlerStartOperationResult.sync} or {@link HandlerStartOperationResult.async}
  * to create a result object. Do not implement this interface directly.
  *
- * @experimental
  */
 export type HandlerStartOperationResult<T = unknown> =
   | HandlerStartOperationResultSync<T>
@@ -26,7 +25,6 @@ export type HandlerStartOperationResult<T = unknown> =
  * Use either {@link HandlerStartOperationResult.sync} or {@link HandlerStartOperationResult.async}
  * to create a result object. Do not implement this interface directly.
  *
- * @experimental
  */
 export const HandlerStartOperationResult = {
   /**
@@ -71,7 +69,6 @@ export const HandlerStartOperationResult = {
  *   return HandlerStartOperationResult.sync(42);
  * ```
  *
- * @experimental
  */
 export interface HandlerStartOperationResultSync<T = unknown> {
   /**
@@ -105,7 +102,6 @@ export interface HandlerStartOperationResultSync<T = unknown> {
  *   return HandlerStartOperationResult.async("unique token");
  * ```
  *
- * @experimental
  */
 export interface HandlerStartOperationResultAsync {
   /**

@@ -10,7 +10,6 @@ import {
 /**
  * A Nexus Service implementation, that provides handlers for each of its operations.
  *
- * @experimental
  */
 export class ServiceHandler<Ops extends OperationMap = OperationMap> {
   /**
@@ -75,7 +74,6 @@ export class ServiceHandler<Ops extends OperationMap = OperationMap> {
 /**
  * Constructs a service handler for a given service contract.
  *
- * @experimental
  */
 export function serviceHandler<Ops extends OperationMap>(
   service: ServiceDefinition<Ops>,
@@ -87,7 +85,6 @@ export function serviceHandler<Ops extends OperationMap>(
 /**
  * A type that defines a handler for a given operation.
  *
- * @experimental
  */
 export type OperationHandlerFor<T> =
   T extends OperationDefinition<infer I, infer O>
@@ -97,7 +94,6 @@ export type OperationHandlerFor<T> =
 /**
  * A type that defines a collection of handlers for a given collection of operation interfaces.
  *
- * @experimental
  */
 export type ServiceHandlerFor<T extends OperationMap = OperationMap> = {
   [K in keyof T & string]: OperationHandlerFor<T[K]>;
