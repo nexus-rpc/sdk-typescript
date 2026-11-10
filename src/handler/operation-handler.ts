@@ -14,7 +14,6 @@ import {
  *
  * This interface is meant to be implemented by Nexus service implementors.
  *
- * @experimental
  */
 export interface OperationHandler<I, O> {
   /**
@@ -42,7 +41,6 @@ export interface OperationHandler<I, O> {
  * A shortcut for defining an operation handler that only implements the {@link OperationHandler.start}
  * method and always returns a {@link HandlerStartOperationResultSync}.
  *
- * @experimental
  */
 export type SyncOperationHandler<I, O> = (ctx: StartOperationContext, input: I) => Promise<O>;
 

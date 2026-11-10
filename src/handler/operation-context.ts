@@ -3,7 +3,6 @@ import { Link } from "../common";
 /**
  * Contextual information provided to every operation handler method.
  *
- * @experimental
  */
 export interface OperationContext {
   /**
@@ -48,7 +47,6 @@ export interface OperationContext {
 /**
  * Context for the {@link OperationHandler.start} method.
  *
- * @experimental
  */
 export interface StartOperationContext extends OperationContext {
   /**
@@ -92,6 +90,5 @@ export interface StartOperationContext extends OperationContext {
 /**
  * Context for the {@link OperationHandler.cancel} method.
  *
- * @experimental
  */
 export type CancelOperationContext = OperationContext;

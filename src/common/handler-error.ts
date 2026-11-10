@@ -23,7 +23,6 @@ import type { Failure } from "./failure";
  *
  * ```
  *
- * @experimental
  */
 export class HandlerError extends Error {
   /**
@@ -71,7 +70,6 @@ export class HandlerError extends Error {
    * @param message - The message of the error.
    * @param options - Extra options for the error, including the cause and retryable override.
    *
-   * @experimental
    */
   constructor(type: HandlerErrorType, message?: string | undefined, options?: HandlerErrorOptions) {
     const actualMessage = message || `Handler error: ${type}`;
@@ -132,7 +130,6 @@ injectSymbolBasedInstanceOf(HandlerError, "HandlerError");
 /**
  * Options for constructing a {@link HandlerError}.
  *
- * @experimental
  * @inline
  */
 export interface HandlerErrorOptions {
@@ -177,7 +174,6 @@ export interface HandlerErrorOptions {
 /**
  * An error type associated with a {@link HandlerError}, defined according to the Nexus specification.
  *
- * @experimental
  */
 export type HandlerErrorType = (typeof HandlerErrorType)[keyof typeof HandlerErrorType];
 export const HandlerErrorType = {
